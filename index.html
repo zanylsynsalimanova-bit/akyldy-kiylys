@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ақылды даңғыл 3D</title>
+<style>
+:root{--bg:#eef2f5;--surface:rgba(255,255,255,.92);--line:#d5dce3;--ink:#1d2730;--mute:#5b6875;--ai:#11906f;--fx:#d0672a;--good:#11906f;--bad:#c63b33}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11161b;--surface:rgba(24,31,38,.92);--line:#33414d;--ink:#e6edf3;--mute:#9aa8b5;--ai:#3fcf9f;--fx:#f08a4b;--good:#3fcf9f;--bad:#ff6b61}}
+:root[data-theme="dark"]{--bg:#11161b;--surface:rgba(24,31,38,.92);--line:#33414d;--ink:#e6edf3;--mute:#9aa8b5;--ai:#3fcf9f;--fx:#f08a4b;--good:#3fcf9f;--bad:#ff6b61}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.bar{position:fixed;top:10px;left:10px;right:10px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;backdrop-filter:blur(6px)}
+.ttl b{display:block;font-size:15px}.ttl small{color:var(--mute)}
+.ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ctl label{display:flex;gap:5px;align-items:center;color:var(--mute);font-size:12.5px}
+select,button{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:34px;cursor:pointer}
+button:hover{border-color:var(--mute)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:32px}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.panel{position:fixed;right:10px;bottom:10px;width:min(380px,calc(100% - 20px));max-height:calc(100% - 110px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;backdrop-filter:blur(6px)}
+.panel h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+.panel section+section{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:4px 3px;text-align:right;font-variant-numeric:tabular-nums}
+td:first-child,th:first-child{text-align:left;color:var(--mute);font-weight:400}
+th.a{color:var(--ai)}th.f{color:var(--fx)}
+.dg{color:var(--good);font-weight:600}.db{color:var(--bad);font-weight:600}
+.sig{display:grid;grid-template-columns:1fr;gap:2px;padding:5px 0;font-size:12.5px}
+.sig b{font-size:13px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.leg{display:flex;flex-wrap:wrap;gap:6px}
+.leg button{font-size:12.5px;padding:4px 9px;min-height:30px;display:inline-flex;gap:6px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px;border:1px solid #0003}
+#spark{width:100%;height:70px;display:block}
+.note{color:var(--mute);font-size:11.5px;margin-top:8px}
+.hud{position:fixed;padding:4px 10px;border-radius:999px;font-weight:600;font-size:13px;color:#fff;pointer-events:none}
+#hA{background:var(--ai)}#hF{background:var(--fx)}
+#tg{display:none}
+@media (max-width:760px){
+  .bar{padding:6px 8px}.ttl small{display:none}
+  .panel{max-height:42%;left:10px;width:auto}
+  .panel.min section:not(:first-child){display:none}
+  #tg{display:inline-flex}
+}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="Әлия Молдағұлова даңғылының 3D моделі"></canvas>
+<div class="hud" id="hA">ЖИ бағдаршамы</div>
+<div class="hud" id="hF">Қалыпты бағдаршам</div>
+<header class="bar">
+  <div class="ttl"><b>Әлия Молдағұлова даңғылы — 3D модель</b><small>Ақтөбе · жасанды интеллектпен басқарылатын бағдаршамдар</small></div>
+  <div class="ctl">
+    <label>Жағдай <select id="scen"></select></label>
+    <label>Жылдамдық <select id="spd"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
+    <div class="seg" id="view"><button data-v="split" class="on">Қатар</button><button data-v="ai">ЖИ</button><button data-v="fx">Қалыпты</button></div>
+    <label>Камера <select id="cam"><option value="all">Жалпы көрініс</option><option value="0">1-қиылыс</option><option value="1">2-қиылыс</option><option value="2">3-қиылыс</option><option value="ev">Жедел көлікті бақылау</option></select></label>
+    <button id="pause">Тоқтату</button>
+    <button id="reset">Қайта бастау</button>
+  </div>
+</header>
+<aside class="panel" id="panel">
+  <section>
+    <h3 style="display:flex;justify-content:space-between;align-items:center">Салыстыру <span id="clock" style="text-transform:none;letter-spacing:0"></span><button id="tg">▾</button></h3>
+    <table><thead><tr><th></th><th class="a">ЖИ</th><th class="f">Қалыпты</th><th>Айырма</th></tr></thead><tbody id="tb"></tbody></table>
+  </section>
+  <section><h3>Кезек ұзындығы (соңғы 5 мин)</h3><canvas id="spark"></canvas></section>
+  <section><h3>Бағдаршамдар</h3><div id="sigs"></div></section>
+  <section><h3>Жедел көлік жіберу</h3><div class="leg" id="leg"></div>
+    <p class="note">Схемалық модель: көшелердің орналасуы картаға жуықтап салынды, қашықтықтар қысқартылған. Параметрлер «Ақылды қиылыс» прототипінен алынды: қалыпты бағдаршамда жасыл 25 с, сары 3 с, бәріне қызыл 2 с; ЖИ көлік санына, кезекке және жедел көлікке қарай ауысады. Тышқанмен айналдыруға, жақындатуға болады.</p>
+  </section>
+</aside>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* ===== Модель (параметрлер «Ақылды қиылыс» прототипінен) ===== */
+const DT=0.1,YEL=3,ALLRED=2,G_FIX=25,MINGAP=2.5,ACC=2.2,DEC=3.5,BRK=6;
+const XS=[-280,0,280],AVL=560,CRL=230,AVH=8,CRH=4.5;
+const XN=['Бәйішев қиылысы','Стадион қиылысы','Автобекет қиылысы'];
+const TYPES={
+  car:{h:.75,w:1.85,cab:1},
+  bus:{h:2.5,w:2.5,cab:0},
+  amb:{ev:1,col:0xf3f5f7,name:'Жедел жәрдем',vmax:17,len:5.8,h:1.7,w:2.1,cab:0},
+  fire:{ev:1,col:0xd3342b,name:'Өрт сөндіру',vmax:16,len:9,h:2.3,w:2.4,cab:0},
+  pol:{ev:1,col:0x2a63c9,name:'Полиция',vmax:18,len:4.8,h:.8,w:1.9,cab:1},
+  ems:{ev:1,col:0xe07a1f,name:'ТЖ қызметі',vmax:17,len:6.5,h:1.9,w:2.2,cab:0}
+};
+const SCEN={
+  jam:{name:'Кептеліс (күнделікті)',e:26,w:24,c:9},
+  rush:{name:'Шың сағат',e:20,w:18,c:8},
+  normal:{name:'Қалыпты күн',e:12,w:12,c:5},
+  night:{name:'Түнгі уақыт',e:5,w:5,c:2},
+  skew:{name:'Бір бағытты жүктеме',e:30,w:8,c:4}
+};
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* Жолақтар: даңғыл (әр бағытта 2 жолақ) + 3 көлденең көше (әр бағытта 1) */
+const LANES=[];
+for(const dir of [1,-1])for(const k of [0,1]){
+  const xs=dir>0?XS:[...XS].reverse();
+  LANES.push({axis:'x',dir,off:dir*(k?5.6:2.2),s0:-dir*AVL,len:2*AVL,
+    stops:xs.map(X=>({s:dir*X-(CRH+5)+AVL,ix:XS.indexOf(X),ph:0,box:2*CRH+10}))});
+}
+XS.forEach((X,ix)=>{for(const dir of [1,-1])
+  LANES.push({axis:'z',dir,off:-dir*2.3,x:X,s0:-dir*CRL,len:2*CRL,stops:[{s:CRL-(AVH+5),ix,ph:1,box:2*AVH+10}]});});
+const CIN=XS.map(()=>[]);
+LANES.forEach((L,li)=>L.stops.forEach((st,si)=>CIN[st.ix].push({li,si,ph:st.ph,first:si===0})));
+function wpos(L,s){return L.axis==='x'?[L.s0+L.dir*s,L.off]:[L.x+L.off,L.s0+L.dir*s];}
+
+class Fixed{
+  constructor(i){this.phase=0;this.state='g';this.timer=i*9;this.mode='fixed';}
+  update(dt){
+    this.timer+=dt;
+    if(this.state==='g'){if(this.timer>=G_FIX){this.state='y';this.timer=0;}}
+    else if(this.state==='y'){if(this.timer>=YEL){this.state='r';this.timer=0;}}
+    else if(this.timer>=ALLRED){this.phase=1-this.phase;this.state='g';this.timer=0;}
+  }
+  sig(ph){return ph!==this.phase?'r':this.state;}
+}
+class Adaptive{
+  constructor(i){this.i=i;this.phase=0;this.state='g';this.timer=0;this.target=1;this.mode='auto';}
+  update(dt,sim){
+    this.timer+=dt;
+    const evp=sim.evPhase(this.i);
+    this.mode=evp===null?'auto':'ev';
+    if(this.state==='g'){
+      let sw=false;
+      if(evp!==null){if(evp!==this.phase&&this.timer>=2)sw=true;}
+      else{
+        const cur=sim.demand(this.i,this.phase),oth=sim.demand(this.i,1-this.phase);
+        const heavy=cur.count>=8&&oth.count>=4;
+        const minG=heavy?(this.phase===0?20:10):6,maxG=this.phase===0?60:35;
+        if(this.timer>=minG&&oth.count>0){
+          if(cur.near===0||cur.blocked)sw=true;
+          else if(this.timer>=maxG)sw=true;
+          else if(oth.count+0.25*oth.maxWait>1.3*cur.count+2)sw=true;
+        }
+      }
+      if(sw){this.state='y';this.timer=0;this.target=1-this.phase;}
+    }else if(this.state==='y'){if(this.timer>=YEL){this.state='r';this.timer=0;}}
+    else if(this.timer>=ALLRED){this.phase=evp!==null?evp:this.target;this.state='g';this.timer=0;}
+  }
+  sig(ph){return ph!==this.phase?'r':this.state;}
+}
+class Sim{
+  constructor(kind){
+    this.kind=kind;this.ctrl=XS.map((x,i)=>kind==='ai'?new Adaptive(i):new Fixed(i));
+    this.t=0;this.lanes=LANES.map(()=>[]);this.backlog=LANES.map(()=>[]);
+    this.fin={n:0,wait:0,stops:0};this.done=[];this.ev={n:0,wsum:0,wmax:0};
+    this.ns=2;this.series=[];
+  }
+  enqueue(e){const o=Object.assign({arr:this.t},e);if(TYPES[e.type].ev)this.backlog[e.li].unshift(o);else this.backlog[e.li].push(o);}
+  evPhase(ix){
+    let best=null,bd=1e9;
+    for(const c of CIN[ix]){
+      const st=LANES[c.li].stops[c.si];
+      for(const v of this.lanes[c.li]){if(!v.ev||v.next!==c.si)continue;const d=st.s-v.s;if(d<250&&d<bd){bd=d;best=c.ph;}}
+      if(c.first&&bd>300&&this.backlog[c.li].length&&TYPES[this.backlog[c.li][0].type].ev){bd=300;best=c.ph;}
+    }
+    return best;
+  }
+  demand(ix,ph){
+    let count=0,near=0,mv=0,maxWait=0;
+    for(const c of CIN[ix]){
+      if(c.ph!==ph)continue;
+      const st=LANES[c.li].stops[c.si];
+      for(const v of this.lanes[c.li]){
+        if(v.next!==c.si)continue;const d=st.s-v.s;if(d>170)continue;
+        count++;if(d<45){near++;if(v.v>1)mv++;}if(v.wait>maxWait)maxWait=v.wait;
+      }
+      if(c.first){const bl=this.backlog[c.li];if(bl.length){count+=bl.length;const w=this.t-bl[0].arr;if(w>maxWait)maxWait=w;}}
+    }
+    return {count,near,maxWait,blocked:near>0&&mv===0};
+  }
+  step(){
+    const dt=DT;this.t+=dt;
+    for(const c of this.ctrl)c.update(dt,this);
+    for(let li=0;li<LANES.length;li++){
+      const L=LANES[li],lane=this.lanes[li],bl=this.backlog[li];
+      if(bl.length){
+        const last=lane[lane.length-1];
+        if(!last||last.s-last.len>=MINGAP+1){
+          const e=bl.shift();
+          lane.push({type:e.type,ev:!!TYPES[e.type].ev,len:e.len,vmax:e.vmax,col:e.col,s:0,
+            v:last?Math.min(e.vmax,Math.max(3,last.v)):Math.min(e.vmax,10),wait:this.t-e.arr,stops:0,moving:true,next:0,run:false});
+        }
+      }
+      for(let i=0;i<lane.length;i++){
+        const v=lane[i],ld=i?lane[i-1]:null;
+        let avail=ld?ld.s-ld.len-v.s-MINGAP:1e9;
+        const st=L.stops[v.next];
+        if(st){
+          const d=st.s-v.s,sg=this.ctrl[st.ix].sig(st.ph);
+          if(sg==='r'){if(!v.run)avail=Math.min(avail,d);}
+          else if(sg==='y'&&!v.run){const sd=v.v*v.v/(2*DEC);if(d>sd+1)avail=Math.min(avail,d);else v.run=true;}
+          else if(sg==='g'&&!v.run&&ld&&d>0&&d<30&&ld.s-ld.len<st.s+st.box+v.len+MINGAP&&ld.v<2)avail=Math.min(avail,d);
+        }
+        const vdes=Math.min(v.vmax,Math.sqrt(2*DEC*Math.max(avail,0)));
+        if(v.v<vdes)v.v=Math.min(vdes,v.v+ACC*dt);else v.v=Math.max(vdes,v.v-BRK*dt);
+        let adv=v.v*dt;if(adv>avail){adv=Math.max(avail,0);v.v=adv/dt;}
+        v.s+=adv;
+        if(v.v<1.5)v.wait+=dt;
+        if(v.moving&&v.v<0.5){v.stops++;v.moving=false;}else if(!v.moving&&v.v>4)v.moving=true;
+        if(st&&v.s>st.s+0.05){v.next++;v.run=false;}
+      }
+      while(lane.length&&lane[0].s>L.len+10){
+        const v=lane.shift();this.fin.n++;this.fin.wait+=v.wait;this.fin.stops+=v.stops;this.done.push(this.t);
+        if(v.ev){this.ev.n++;this.ev.wsum+=v.wait;if(v.wait>this.ev.wmax)this.ev.wmax=v.wait;}
+      }
+    }
+    while(this.done.length&&this.done[0]<this.t-60)this.done.shift();
+    if(this.t>=this.ns){this.ns+=2;this.series.push({t:this.t,q:this.queueNow()});if(this.series.length>150)this.series.shift();}
+  }
+  queueNow(){
+    let q=0;
+    for(let li=0;li<LANES.length;li++){for(const v of this.lanes[li])if(v.v<1.5&&v.next<LANES[li].stops.length)q++;q+=this.backlog[li].length;}
+    return q;
+  }
+  metrics(){
+    let n=this.fin.n,w=this.fin.wait,st=this.fin.stops,evN=this.ev.n,evW=this.ev.wsum;
+    for(let li=0;li<LANES.length;li++){
+      for(const v of this.lanes[li]){n++;w+=v.wait;st+=v.stops;if(v.ev){evN++;evW+=v.wait;}}
+      for(const e of this.backlog[li]){n++;const bw=this.t-e.arr;w+=bw;if(TYPES[e.type].ev){evN++;evW+=bw;}}
+    }
+    return {avgWait:n?w/n:0,avgStops:n?st/n:0,q:this.queueNow(),thr:this.t>5?this.done.length*60/Math.min(60,this.t):0,
+      evAvg:evN?evW/evN:null,co2:w*0.222/1000*2.31};
+  }
+}
+class World{
+  constructor(scen,seed){
+    this.rng=mulberry32(seed);this.t=0;this.scen=scen;
+    this.ai=new Sim('ai');this.fx=new Sim('fx');
+    this.next=LANES.map((L,li)=>this.expo(li));this.nextEV=25+this.rng()*20;
+  }
+  rate(li){const L=LANES[li],S=SCEN[this.scen];return L.axis==='x'?(L.dir>0?S.e:S.w)/2:S.c;}
+  expo(li){const r=this.rate(li)/60;return r>0?this.t-Math.log(1-this.rng())/r:Infinity;}
+  spec(li){
+    if(LANES[li].axis==='x'&&this.rng()<0.05)return {li,type:'bus',len:12,vmax:11,col:8+Math.floor(this.rng()*2)};
+    return {li,type:'car',len:4.2+this.rng()*0.7,vmax:12.5+this.rng()*2.5,col:Math.floor(this.rng()*8)};
+  }
+  spawnEV(type,li){
+    if(li==null)li=this.rng()<.7?[0,2][Math.floor(this.rng()*2)]:4+Math.floor(this.rng()*6);
+    if(!type)type=['amb','fire','pol','ems'][Math.floor(this.rng()*4)];
+    const T=TYPES[type],e={li,type,len:T.len,vmax:T.vmax,col:0};
+    this.ai.enqueue(e);this.fx.enqueue(e);
+  }
+  step(){
+    this.t+=DT;
+    for(let li=0;li<LANES.length;li++)while(this.t>=this.next[li]){
+      const e=this.spec(li);this.ai.enqueue(e);this.fx.enqueue(e);this.next[li]+=this.expo(li)-this.t;
+    }
+    if(this.t>=this.nextEV){this.spawnEV();this.nextEV=this.t+40+this.rng()*40;}
+    this.ai.step();this.fx.step();
+  }
+}
+/* ===== 3D қала ===== */
+const cv=document.getElementById('cv');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,logarithmicDepthBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xcfe0ee);scene.fog=new THREE.Fog(0xcfe0ee,800,1700);
+const cam=new THREE.PerspectiveCamera(45,1,2,5000);
+cam.position.set(-200,380,520);
+const ctl=new THREE.OrbitControls(cam,cv);
+ctl.enableDamping=true;ctl.maxPolarAngle=1.45;ctl.minDistance=25;ctl.maxDistance=1500;ctl.target.set(0,0,0);
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a9a7a,0.8));
+const sun=new THREE.DirectionalLight(0xffffff,0.75);
+sun.position.set(-300,500,250);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-750,right:750,top:650,bottom:-650,near:10,far:1500});
+scene.add(sun);
+
+const rng=mulberry32(42);
+const lam=c=>new THREE.MeshLambertMaterial({color:c});
+const unitBox=new THREE.BoxGeometry(1,1,1).translate(0,.5,0);
+const unitPlane=new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2);
+function flat(x,z,w,d,y,c){const m=new THREE.Mesh(unitPlane,lam(c));m.position.set(x,y,z);m.scale.set(w,1,d);m.receiveShadow=true;scene.add(m);return m;}
+function box(x,z,w,d,h,c,y=0){const m=new THREE.Mesh(unitBox,lam(c));m.position.set(x,y,z);m.scale.set(w,h,d);m.castShadow=m.receiveShadow=true;scene.add(m);return m;}
+
+flat(0,0,1800,1400,0,0xd8d4c8);
+/* саябақтар */
+const PARKS=[[-185,58,130,60,'Сәңкібай батыр гүл бағы'],[20,-200,80,120,'Абай бульвары'],[425,95,190,130,''],[150,-32,180,14,'']];
+PARKS.forEach(p=>flat(p[0],p[1],p[2],p[3],.05,0x9cc68a));
+/* жаяу жүргінші жолы мен жолдар */
+const SZ=[-170,-330,170,330],SX=[-420,-140,140,420];
+flat(0,0,2*AVL+40,2*AVH+14,.1,0xbfbab0);
+XS.forEach(X=>flat(X,0,2*CRH+8,2*CRL,.1,0xbfbab0));
+flat(0,0,2*AVL+40,2*AVH,.15,0x50565c);
+XS.forEach(X=>flat(X,0,2*CRH,2*CRL,.16,0x50565c));
+SZ.forEach(z=>flat(0,z,1500,9,.12,0x6a6f74));
+SX.forEach(x=>{flat(x,-(AVH+7+290)/1,9,580,.12,0x6a6f74);flat(x,AVH+7+290,9,580,.12,0x6a6f74);});
+/* бөлгіш жолақ */
+for(let i=0;i<=XS.length;i++){
+  const a=i?XS[i-1]+CRH+6:-AVL-20,b=i<XS.length?XS[i]-CRH-6:AVL+20;
+  box((a+b)/2,0,b-a,1.4,.3,0x7fa66c);
+}
+/* жол белгілері (инстанс) */
+const marks=[];
+for(const zz of [3.9,-3.9])for(let x=-AVL;x<AVL;x+=10){if(XS.some(X=>Math.abs(x-X)<CRH+9))continue;marks.push([x,zz,4,.2]);}
+XS.forEach(X=>{
+  for(let z=-CRL;z<CRL;z+=8){if(Math.abs(z)<AVH+9)continue;marks.push([X,z,.2,3.5]);}
+  for(const d of [1,-1]){
+    for(let z=.9;z<AVH;z+=1.3)marks.push([X-d*(CRH+2.5),d*z,3,.65]);
+    for(let x=-CRH+.6;x<CRH;x+=1.3)marks.push([X+x,-d*(AVH+2.5),.65,3]);
+  }
+});
+{const im=new THREE.InstancedMesh(unitPlane,new THREE.MeshBasicMaterial({color:0xf2f2ee}),marks.length);
+ const D=new THREE.Object3D();marks.forEach((m,i)=>{D.position.set(m[0],.2,m[1]);D.scale.set(m[2],1,m[3]);D.updateMatrix();im.setMatrixAt(i,D.matrix);});scene.add(im);}
+
+/* терезе текстурасы */
+function winTex(){const c=document.createElement('canvas');c.width=64;c.height=128;const g=c.getContext('2d');
+  g.fillStyle='#fff';g.fillRect(0,0,64,128);g.fillStyle='#7d8b98';
+  for(let r=0;r<12;r++)for(let k=0;k<6;k++)g.fillRect(4+k*10,5+r*10,6,6);
+  const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;}
+const facade=new THREE.MeshLambertMaterial({map:winTex()}),roof=new THREE.MeshLambertMaterial({color:0xb9b4aa});
+
+/* көрнекті орындар */
+const EXCL=[];
+function excl(x,z,w,d){EXCL.push([x-w/2,x+w/2,z-d/2,z+d/2]);}
+PARKS.forEach(p=>excl(p[0],p[1],p[2]+6,p[3]+6));
+const LBL=[];
+// Орталық стадион
+{const sx=-80,sz=-80;excl(sx,sz,150,115);
+ const f=new THREE.Mesh(new THREE.CircleGeometry(40,48).rotateX(-Math.PI/2),lam(0x58a34a));f.scale.x=1.35;f.position.set(sx,.3,sz);scene.add(f);
+ const st=new THREE.Mesh(new THREE.CylinderGeometry(54,44,15,64,1,true),new THREE.MeshLambertMaterial({color:0xd9dde2,side:THREE.DoubleSide}));
+ st.scale.x=1.35;st.position.set(sx,7.5,sz);st.castShadow=true;scene.add(st);
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(54,1.3,6,64).rotateX(Math.PI/2),lam(0x8a3b3b));rim.scale.x=1.35;rim.position.set(sx,15,sz);scene.add(rim);
+ [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,b])=>box(sx+a*70,sz+b*50,1.5,1.5,32,0x6d747b));
+ LBL.push(['Орталық стадион',sx,40,sz]);}
+// Әкімдік
+excl(-60,-210,90,40);box(-60,-210,80,20,24,0xf1efe8);box(-60,-198,24,6,28,0xe6e1d3);LBL.push(['Әкімдік',-60,42,-210]);
+// Аурухана (БСМП)
+excl(-200,-170,50,40);box(-200,-170,44,30,22,0xf4f4f4);box(-200,-170,14,3,.5,0xd3342b,22);box(-200,-170,3,14,.5,0xd3342b,22);LBL.push(['Жедел медициналық көмек ауруханасы',-200,40,-170]);
+// Өнер музейі
+excl(90,70,40,30);box(90,70,34,22,12,0xd9a441);LBL.push(['Өнер музейі',90,28,70]);
+// Өнер орталығы
+excl(240,150,40,30);box(240,150,34,24,14,0xc77d4a);LBL.push(['Өнер орталығы',240,30,150]);
+// Экспресс автобекеті
+excl(335,-55,70,40);box(335,-62,60,16,8,0xe8e4da);box(335,-42,60,12,.6,0x9aa6b2,6);
+for(let i=0;i<4;i++)box(312+i*15,-42,3,12,3,0x2e9e5b);LBL.push(['Экспресс автобекеті',335,26,-55]);
+// Keruen City, Aqtobe Mall
+excl(470,100,90,60);box(470,100,80,50,20,0xd6d9de);LBL.push(['Keruen City',470,36,100]);
+excl(-480,-85,90,60);box(-480,-85,80,50,22,0xd0d4da);LBL.push(['Aqtobe Mall',-480,38,-85]);
+
+/* үйлер */
+function free(x,z,w,d){
+  if(Math.abs(z)<AVH+16+d/2)return false;
+  for(const X of XS)if(Math.abs(z)<CRL+6&&Math.abs(x-X)<CRH+12+w/2)return false;
+  for(const zz of SZ)if(Math.abs(z-zz)<10+d/2)return false;
+  for(const xx of SX)if(Math.abs(x-xx)<10+w/2)return false;
+  for(const e of EXCL)if(x+w/2>e[0]&&x-w/2<e[1]&&z+d/2>e[2]&&z-d/2<e[3])return false;
+  return true;
+}
+const BLD=[],BCOL=[0xf0ebe0,0xe3d5bf,0xd7c3a8,0xc9cfd6,0xe9e2d5,0xd6b39a,0xbfc9c2,0xf5f2ec].map(c=>new THREE.Color(c));
+for(let x=-680;x<=680;x+=30)for(let z=-600;z<=600;z+=30){
+  if(rng()<.12)continue;
+  const w=12+rng()*14,d=12+rng()*14,cx=x+(rng()-.5)*6,cz=z+(rng()-.5)*6;
+  if(!free(cx,cz,w,d))continue;
+  let h=Math.abs(cz)<90?14+rng()*24:8+rng()*18;if(Math.abs(cx)<220&&Math.abs(cz)<140)h+=rng()*20;
+  BLD.push([cx,cz,w,d,h]);
+}
+{const im=new THREE.InstancedMesh(unitBox,[facade,facade,roof,roof,facade,facade],BLD.length);
+ const D=new THREE.Object3D();
+ BLD.forEach((b,i)=>{D.position.set(b[0],0,b[1]);D.scale.set(b[2],b[4],b[3]);D.updateMatrix();im.setMatrixAt(i,D.matrix);im.setColorAt(i,BCOL[i%BCOL.length]);});
+ im.castShadow=im.receiveShadow=true;scene.add(im);}
+
+/* ағаштар */
+const TR=[];
+for(const zz of [AVH+4,-AVH-4])for(let x=-AVL;x<AVL;x+=13){if(XS.some(X=>Math.abs(x-X)<CRH+12))continue;TR.push([x+rng()*3,zz]);}
+PARKS.forEach(p=>{const n=Math.floor(p[2]*p[3]/220);for(let i=0;i<n;i++)TR.push([p[0]+(rng()-.5)*p[2]*.9,p[1]+(rng()-.5)*p[3]*.9]);});
+{const trunk=new THREE.InstancedMesh(new THREE.CylinderGeometry(.25,.35,2.5,5).translate(0,1.25,0),lam(0x6b4f36),TR.length);
+ const crown=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(2.3,0).translate(0,4,0),lam(0xffffff),TR.length);
+ const D=new THREE.Object3D(),cc=new THREE.Color();
+ TR.forEach((t,i)=>{const s=.8+rng()*.6;D.position.set(t[0],0,t[1]);D.scale.set(s,s,s);D.updateMatrix();trunk.setMatrixAt(i,D.matrix);crown.setMatrixAt(i,D.matrix);
+   crown.setColorAt(i,cc.setHSL(.27+rng()*.06,.42,.36+rng()*.1));});
+ crown.castShadow=true;scene.add(trunk,crown);}
+
+/* жазулар */
+function label(text,x,y,z,size=10,bg='rgba(255,255,255,.88)',fg='#1d2730'){
+  const c=document.createElement('canvas'),g=c.getContext('2d'),fs=44;
+  g.font=`600 ${fs}px system-ui,Segoe UI,sans-serif`;const w=g.measureText(text).width+36;
+  c.width=w;c.height=fs+26;g.font=`600 ${fs}px system-ui,Segoe UI,sans-serif`;
+  g.fillStyle=bg;g.beginPath();g.roundRect?g.roundRect(0,0,w,c.height,18):g.rect(0,0,w,c.height);g.fill();
+  g.fillStyle=fg;g.textBaseline='middle';g.fillText(text,18,c.height/2+2);
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false}));
+  sp.scale.set(size*w/c.height,size,1);sp.position.set(x,y,z);sp.renderOrder=10;scene.add(sp);return sp;
+}
+LBL.forEach(l=>label(l[0],l[1],l[2],l[3],8));
+PARKS.forEach(p=>p[4]&&label(p[4],p[0],12,p[1],7,'rgba(230,245,225,.9)','#2d5a25'));
+label('Әлия Молдағұлова даңғылы',-430,10,0,9,'rgba(29,39,48,.85)','#fff');
+label('Әлия Молдағұлова даңғылы',140,10,0,9,'rgba(29,39,48,.85)','#fff');
+XS.forEach((X,i)=>label(`${i+1}. ${XN[i]}`,X,22,-30,8,'rgba(29,39,48,.85)','#fff'));
+label('Сақтаған Бәйішев көшесі',XS[0],8,150,7);
+/* ===== Бағдаршамдар ===== */
+const SC={g:0x22dd66,y:0xffc400,r:0xff3b30,off:0x2a2f35};
+const SIG=XS.map(X=>{
+  const A=[
+    {ph:0,line:[X-CRH-5,(AVH+.7)/2,1.2,AVH-.7],pole:[X-CRH-5.5,AVH+2]},
+    {ph:0,line:[X+CRH+5,-(AVH+.7)/2,1.2,AVH-.7],pole:[X+CRH+5.5,-AVH-2]},
+    {ph:1,line:[X-CRH/2,-(AVH+5),CRH-.4,1.2],pole:[X-CRH-2,-AVH-5.5]},
+    {ph:1,line:[X+CRH/2,AVH+5,CRH-.4,1.2],pole:[X+CRH+2,AVH+5.5]}
+  ];
+  A.forEach(a=>{
+    a.lm=new THREE.MeshBasicMaterial({color:SC.r});
+    const l=new THREE.Mesh(unitPlane,a.lm);l.position.set(a.line[0],.25,a.line[1]);l.scale.set(a.line[2],1,a.line[3]);scene.add(l);
+    const [px,pz]=a.pole;
+    box(px,pz,.35,.35,6.5,0x3a3f45);box(px,pz,.9,.9,2.8,0x1f2328,6.3);
+    a.L={r:new THREE.MeshBasicMaterial({color:SC.off}),y:new THREE.MeshBasicMaterial({color:SC.off}),g:new THREE.MeshBasicMaterial({color:SC.off})};
+    [['r',8.5],['y',7.7],['g',6.9]].forEach(([k,y])=>{const s=new THREE.Mesh(new THREE.SphereGeometry(.42,10,8),a.L[k]);s.position.set(px,y,pz);scene.add(s);});
+  });
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(16,.6,8,48).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0x3b82f6,transparent:true,opacity:.85}));
+  ring.position.set(X,1.5,0);ring.visible=false;scene.add(ring);
+  return {A,ring};
+});
+function applySignals(sim){
+  const pulse=.5+.5*Math.sin(performance.now()/150);
+  SIG.forEach((S,ix)=>{
+    const c=sim.ctrl[ix];
+    S.A.forEach(a=>{const s=c.sig(a.ph);a.lm.color.setHex(SC[s]);for(const k of 'ryg')a.L[k].color.setHex(k===s?SC[k]:SC.off);});
+    S.ring.visible=c.mode==='ev';S.ring.scale.setScalar(1+pulse*.12);
+  });
+}
+
+/* ===== Көліктер (InstancedMesh, әр модельге бөлек) ===== */
+const PAL=[0xdfe3e8,0x8ea3b6,0xcdaa6d,0x7f9470,0xad6262,0x6073a3,0x4a525b,0xe6e2d6,0xf2c230,0x2e9e5b].map(c=>new THREE.Color(c));
+const MAXV=1400,MAXE=60;
+function vehGroup(){
+  const root=new THREE.Group();
+  const mk=(geo,mat,n)=>{const m=new THREE.InstancedMesh(geo,mat,n);m.frustumCulled=false;for(let i=0;i<n;i++)m.setColorAt(i,PAL[0]);root.add(m);return m;};
+  const g={root,
+    body:mk(unitBox,lam(0xffffff),MAXV),
+    cab:mk(unitBox,lam(0x2b3540),MAXV),
+    bar:mk(unitBox,new THREE.MeshBasicMaterial({color:0xffffff}),MAXE),
+    pin:mk(new THREE.ConeGeometry(2.2,5,12).rotateX(Math.PI).translate(0,2.5,0),new THREE.MeshBasicMaterial({color:0xffffff}),MAXE)};
+  scene.add(root);return g;
+}
+const GA=vehGroup(),GF=vehGroup();
+const D=new THREE.Object3D(),tmpC=new THREE.Color(),RED=new THREE.Color(0xff2a2a),BLUE=new THREE.Color(0x2a6bff);
+function yawOf(L){return L.axis==='x'?(L.dir>0?0:Math.PI):(L.dir>0?-Math.PI/2:Math.PI/2);}
+function syncVeh(sim,G){
+  let n=0,c=0,e=0;const blink=(performance.now()/160|0)%2;
+  for(let li=0;li<LANES.length;li++){
+    const L=LANES[li],yaw=yawOf(L),hx=L.axis==='x'?L.dir:0,hz=L.axis==='z'?L.dir:0;
+    for(const v of sim.lanes[li]){
+      if(n>=MAXV)break;
+      const T=TYPES[v.type],[x,z]=wpos(L,v.s-v.len/2);
+      D.position.set(x,.3,z);D.rotation.set(0,yaw,0);D.scale.set(v.len,T.h,T.w);D.updateMatrix();
+      G.body.setMatrixAt(n,D.matrix);G.body.setColorAt(n,T.ev?tmpC.setHex(T.col):PAL[v.col]);n++;
+      let top=.3+T.h;
+      if(T.cab){D.position.set(x-hx*v.len*.08,top,z-hz*v.len*.08);D.scale.set(v.len*.5,.55,T.w*.86);D.updateMatrix();G.cab.setMatrixAt(c++,D.matrix);top+=.55;}
+      if(T.ev&&e<MAXE){
+        D.position.set(x,top,z);D.scale.set(.9,.3,T.w*.9);D.updateMatrix();G.bar.setMatrixAt(e,D.matrix);G.bar.setColorAt(e,blink?RED:BLUE);
+        D.position.set(x,top+6,z);D.rotation.set(0,performance.now()/400,0);D.scale.set(1,1,1);D.updateMatrix();G.pin.setMatrixAt(e,D.matrix);G.pin.setColorAt(e,tmpC.setHex(T.col===0xf3f5f7?0xd3342b:T.col));e++;
+      }
+    }
+  }
+  G.body.count=n;G.cab.count=c;G.bar.count=e;G.pin.count=e;
+  for(const m of [G.body,G.cab,G.bar,G.pin]){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;}
+}
+/* ===== Басқару, камера, интерфейс ===== */
+const $=id=>document.getElementById(id);
+let world,scen='jam',speed=2,paused=false,view='split',camMode='all',anim=null;
+const scSel=$('scen');for(const k in SCEN)scSel.add(new Option(SCEN[k].name,k));
+function reset(){world=new World(scen,7);for(let i=0;i<1200;i++)world.step();}
+reset();
+scSel.onchange=()=>{scen=scSel.value;reset();};
+$('spd').onchange=e=>speed=+e.target.value;
+$('pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'Жалғастыру':'Тоқтату';};
+$('reset').onclick=reset;
+$('view').onclick=e=>{const b=e.target.closest('button');if(!b)return;view=b.dataset.v;
+  for(const x of $('view').children)x.classList.toggle('on',x===b);};
+$('tg').onclick=()=>$('panel').classList.toggle('min');
+function flyTo(pos,tgt){anim={p0:cam.position.clone(),t0:ctl.target.clone(),p1:new THREE.Vector3(...pos),t1:new THREE.Vector3(...tgt),k:0};}
+$('cam').onchange=e=>{camMode=e.target.value;
+  if(camMode==='all')flyTo([-200,380,520],[0,0,0]);
+  else if(camMode!=='ev'){const X=XS[+camMode];flyTo([X-60,95,75],[X,0,0]);}};
+['amb','fire','pol','ems'].forEach(k=>{const T=TYPES[k],b=document.createElement('button');
+  b.innerHTML=`<span class="sw" style="background:#${T.col.toString(16).padStart(6,'0')}"></span>${T.name}`;
+  b.onclick=()=>world.spawnEV(k,[0,2][Math.random()*2|0]);$('leg').appendChild(b);});
+
+function evPos(){
+  for(let li=0;li<LANES.length;li++)for(const v of world.ai.lanes[li])if(v.ev){const[x,z]=wpos(LANES[li],v.s);return new THREE.Vector3(x,0,z);}
+  return null;
+}
+
+function resize(){renderer.setSize(innerWidth,innerHeight,false);}
+addEventListener('resize',resize);resize();
+renderer.shadowMap.needsUpdate=true;
+
+function renderView(k,x,y,w,h){
+  renderer.setViewport(x,y,w,h);renderer.setScissor(x,y,w,h);
+  cam.aspect=w/h;cam.updateProjectionMatrix();
+  GA.root.visible=k==='ai';GF.root.visible=k==='fx';
+  applySignals(world[k]);renderer.render(scene,cam);
+}
+function placeHud(){
+  const W=innerWidth,H=innerHeight,hA=$('hA'),hF=$('hF');
+  const bh=document.querySelector('.bar').getBoundingClientRect().bottom+8;
+  hA.style.display=view!=='fx'?'block':'none';hF.style.display=view!=='ai'?'block':'none';
+  if(view==='split'&&W<760){hA.style.left=hF.style.left='12px';hA.style.top=bh+'px';hF.style.top=(H/2+8)+'px';}
+  else if(view==='split'){hA.style.left='12px';hF.style.left=(W/2+12)+'px';hA.style.top=hF.style.top=bh+'px';}
+  else{hA.style.left=hF.style.left='12px';hA.style.top=hF.style.top=bh+'px';}
+}
+function render(){
+  const W=innerWidth,H=innerHeight;
+  renderer.setScissorTest(true);
+  if(view==='split'){
+    if(W<760){renderView('ai',0,H/2,W,H/2);renderView('fx',0,0,W,H/2);}
+    else{renderView('ai',0,0,W/2,H);renderView('fx',W/2,0,W/2,H);}
+  }else renderView(view,0,0,W,H);
+}
+
+/* интерфейс */
+const ROWS=[['avgWait','Орташа күту, с',1,1],['avgStops','Орташа тоқтау саны',2,1],['q','Қазіргі кезек, көлік',0,1],
+  ['thr','Өткен көлік / мин',0,0],['evAvg','Жедел көліктің күтуі, с',1,1],['co2','Бос тұрудан CO₂, кг',2,1]];
+function fmt(v,d){return v==null?'—':v.toFixed(d);}
+function sigText(c){
+  const col=c.state==='g'?'#22aa55':c.state==='y'?'#e0a800':'#e0453b';
+  const ph=c.state==='g'?(c.phase===0?'Даңғылға жасыл':'Көшеге жасыл'):c.state==='y'?'Сары':'Бәріне қызыл';
+  return `<span class="dot" style="background:${col}"></span>${ph} · ${c.timer.toFixed(0)} с${c.mode==='ev'?' · <b style="color:#3b82f6">жедел көлікке жол</b>':''}`;
+}
+function updateUI(){
+  const A=world.ai.metrics(),F=world.fx.metrics();
+  $('tb').innerHTML=ROWS.map(([k,n,d,low])=>{
+    const a=A[k],f=F[k];let dl='—',cl='';
+    if(a!=null&&f!=null&&Math.max(a,f)>0.01){
+      const p=low?(f-a)/Math.max(f,1e-9)*100:(a-f)/Math.max(f,1e-9)*100;
+      dl=Math.abs(p)<1?'≈':`${Math.abs(p).toFixed(0)}% ${p>0?'жақсы':'нашар'}`;cl=Math.abs(p)<1?'':p>0?'dg':'db';
+    }
+    return `<tr><td>${n}</td><td>${fmt(a,d)}</td><td>${fmt(f,d)}</td><td class="${cl}">${dl}</td></tr>`;
+  }).join('');
+  const t=world.t|0;$('clock').textContent=`${String(t/60|0).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+  $('sigs').innerHTML=XS.map((X,i)=>`<div class="sig"><b>${i+1}. ${XN[i]}</b><span><span style="color:var(--ai);font-weight:600">ЖИ:</span> ${sigText(world.ai.ctrl[i])}</span><span><span style="color:var(--fx);font-weight:600">Қалыпты:</span> ${sigText(world.fx.ctrl[i])}</span></div>`).join('');
+  drawSpark();placeHud();
+}
+function drawSpark(){
+  const c=$('spark'),r=c.getBoundingClientRect(),dpr=devicePixelRatio||1;
+  c.width=r.width*dpr;c.height=r.height*dpr;const g=c.getContext('2d');g.scale(dpr,dpr);
+  const sa=world.ai.series,sf=world.fx.series;if(sa.length<2)return;
+  const top=Math.max(10,...sa.map(s=>s.q),...sf.map(s=>s.q)),t0=sa[0].t,span=Math.max(1,sa[sa.length-1].t-t0);
+  const cs=getComputedStyle(document.documentElement);
+  g.fillStyle=cs.getPropertyValue('--mute');g.font='10px system-ui';g.fillText(top,2,10);
+  [[sf,cs.getPropertyValue('--fx')],[sa,cs.getPropertyValue('--ai')]].forEach(([s,col])=>{
+    g.strokeStyle=col;g.lineWidth=2;g.beginPath();
+    s.forEach((p,i)=>{const x=(p.t-t0)/span*(r.width-4)+2,y=r.height-2-p.q/top*(r.height-14);i?g.lineTo(x,y):g.moveTo(x,y);});g.stroke();});
+}
+
+let last=performance.now(),acc=0,lastUI=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(!paused){acc+=dt*speed;let k=0;while(acc>=DT&&k<100){world.step();acc-=DT;k++;}if(k>=100)acc=0;}
+  if(anim){anim.k=Math.min(1,anim.k+dt/1.2);const e=anim.k<.5?2*anim.k*anim.k:1-Math.pow(-2*anim.k+2,2)/2;
+    cam.position.lerpVectors(anim.p0,anim.p1,e);ctl.target.lerpVectors(anim.t0,anim.t1,e);if(anim.k>=1)anim=null;}
+  else if(camMode==='ev'){const p=evPos();if(p){const d=p.clone().sub(ctl.target).multiplyScalar(.08);ctl.target.add(d);cam.position.add(d);
+    if(cam.position.distanceTo(ctl.target)>160){cam.position.lerp(ctl.target.clone().add(new THREE.Vector3(-40,45,60)),.05);}}}
+  ctl.update();
+  syncVeh(world.ai,GA);syncVeh(world.fx,GF);
+  render();
+  if(now-lastUI>300){lastUI=now;updateUI();}
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

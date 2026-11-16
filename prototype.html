@@ -1,0 +1,820 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ақылды қиылыс</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap">
+<style>
+/* Layout: бақылау бөлмесі. Екі тең панель қатар тұрады (сол жақта ақылды жүйе, оң жақта қалыпты бағдаршам),
+   одан кейін тікелей салыстыру кестесі, график, толық сынақ және әдістеме. */
+:root{
+  --bg:#f1f4f2; --surface:#ffffff; --surface2:#e8edea; --ink:#111a17; --muted:#56635d; --line:#d3dad6;
+  --ai:#1d5fe0; --ai-soft:#e1eaff; --on-ai:#ffffff;
+  --fx:#667280; --fx-soft:#e6e9ed;
+  --good:#18783b; --bad:#c0352b; --good-soft:#dff2e5; --bad-soft:#fbe4e1;
+  --road:#2a302e; --ground:#e4e9e6; --block:#d2dad5; --mark:#eceee9;
+  --font-display:"Rubik","Segoe UI",system-ui,sans-serif;
+  --font-body:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1311; --surface:#151c1a; --surface2:#1c2623; --ink:#e7edea; --muted:#9aa8a1; --line:#2a3531;
+    --ai:#7aa5ff; --ai-soft:#172646; --on-ai:#0a1428;
+    --fx:#9ba6b3; --fx-soft:#222a33;
+    --good:#52c97f; --bad:#ff8074; --good-soft:#12301f; --bad-soft:#3a1916;
+    --road:#242a28; --ground:#0f1513; --block:#161e1b; --mark:#c7cdc9;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1311; --surface:#151c1a; --surface2:#1c2623; --ink:#e7edea; --muted:#9aa8a1; --line:#2a3531;
+  --ai:#7aa5ff; --ai-soft:#172646; --on-ai:#0a1428;
+  --fx:#9ba6b3; --fx-soft:#222a33;
+  --good:#52c97f; --bad:#ff8074; --good-soft:#12301f; --bad-soft:#3a1916;
+  --road:#242a28; --ground:#0f1513; --block:#161e1b; --mark:#c7cdc9;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 var(--font-body);
+  padding-block:24px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(30px,4.4vw,46px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(21px,2.4vw,26px);font-weight:600}
+h3{font-size:16px;font-weight:600}
+p{margin:0}
+.kicker{color:var(--muted);font-size:13.5px;letter-spacing:.04em;margin-bottom:8px}
+.lead{max-width:72ch;color:var(--muted);margin-top:12px;font-size:16px}
+.sec-head{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.sec-head p{color:var(--muted);max-width:80ch}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end}
+.ctl{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ctl label,.lab{font-size:12.5px;color:var(--muted);font-weight:500}
+.ctl output{color:var(--ink);font-weight:600;margin-left:6px}
+select,button,input[type=range]{font:inherit;color:var(--ink)}
+select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:38px;max-width:100%}
+input[type=range]{accent-color:var(--ai);width:190px;max-width:100%;min-height:38px}
+button{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;min-height:38px;font-weight:500}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--ai);color:var(--on-ai);border-color:var(--ai)}
+:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+.evbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.evb{display:inline-flex;align-items:center;gap:8px}
+.evb i{font-style:normal;font-family:var(--font-display);font-weight:700;font-size:12px;width:22px;height:22px;border-radius:6px;display:grid;place-items:center}
+.g-amb{background:#f3f5f7;color:#d3342b;border:1px solid #c9ced3}
+.g-fire{background:#d3342b;color:#fff}
+.g-pol{background:#2a63c9;color:#fff}
+.g-ems{background:#e07a1f;color:#fff}
+.chk{display:inline-flex;gap:8px;align-items:center;font-size:14px;margin-left:auto}
+.chk input{width:18px;height:18px;accent-color:var(--ai)}
+.fair{margin-top:12px;font-size:13.5px;color:var(--muted)}
+
+.duel{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.sys{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sys-head{display:flex;flex-direction:column;gap:8px}
+.tag{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.dot.ai{background:var(--ai)} .dot.fx{background:var(--fx)}
+.sys-ai .tag{color:var(--ai)} .sys-fx .tag{color:var(--fx)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);font-size:12.5px;line-height:1.5}
+.chip.ev{background:var(--ai);color:var(--on-ai);border-color:var(--ai);font-weight:600}
+.lamp{width:9px;height:9px;border-radius:50%;background:#888}
+.lamp.g{background:#2fbf71}.lamp.y{background:#f0b429}.lamp.r{background:#ef4b3f}
+canvas.scene{width:100%;height:auto;aspect-ratio:1;display:block;border-radius:10px;max-width:560px;margin-inline:auto;background:var(--ground)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpi{background:var(--surface2);border-radius:10px;padding:10px 12px;min-width:0}
+.kpi span{display:block;font-size:12px;color:var(--muted);line-height:1.3}
+.kpi b{display:block;font-family:var(--font-display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:3px}
+.kpi small{font-size:12px;color:var(--muted);font-weight:400;font-family:var(--font-body)}
+
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+thead th{font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap}
+thead th .dot{margin-right:7px}
+td.num,th.num{text-align:right}
+tbody th{font-weight:500}
+tbody th small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+tr.grp th{background:var(--surface2);font-size:12.5px;color:var(--muted);font-weight:600;padding-block:7px}
+td.best{background:var(--ai-soft);font-weight:600}
+td.bestfx{background:var(--fx-soft);font-weight:600}
+.dl{display:inline-block;min-width:64px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:600;font-size:13px}
+.dl.good{background:var(--good-soft);color:var(--good)}
+.dl.bad{background:var(--bad-soft);color:var(--bad)}
+.dl.tie{background:var(--surface2);color:var(--muted)}
+.verdict{margin-bottom:12px;padding:12px 14px;border-radius:10px;background:var(--ai-soft);font-size:15px}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+
+.seg{display:inline-flex;flex-wrap:wrap;gap:6px}
+.seg button{border-radius:999px;padding:6px 14px;min-height:34px;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted);margin:10px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{display:inline-block;width:26px;height:0;border-top:3px solid var(--ai)}
+.legend i.fx{border-top:3px dashed var(--fx)}
+canvas#chart{width:100%;height:270px;display:block}
+
+.cards5{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.sc{background:var(--surface2);border-radius:12px;padding:12px 14px}
+.sc span{font-size:12.5px;color:var(--muted);display:block}
+.sc b{display:block;font-family:var(--font-display);font-size:28px;font-weight:600;margin:4px 0;font-variant-numeric:tabular-nums}
+.sc b.good{color:var(--good)} .sc b.bad{color:var(--bad)} .sc b.tie{color:var(--muted)}
+.sc small{font-size:12.5px;color:var(--muted)}
+.brow{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr) 78px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.bname{font-weight:500}
+.bpair{display:flex;flex-direction:column;gap:5px;min-width:0}
+.bar{position:relative;height:20px;border-radius:5px;background:var(--surface2);overflow:hidden}
+.bar span{position:absolute;inset:0 auto 0 0;border-radius:5px}
+.bar.ai span{background:var(--ai)} .bar.fx span{background:var(--fx);opacity:.75}
+.bar b{position:absolute;left:8px;top:0;line-height:20px;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);text-shadow:0 0 3px var(--surface2),0 0 3px var(--surface2)}
+progress{width:220px;max-width:100%;height:8px;accent-color:var(--ai)}
+details{margin-top:18px}
+summary{cursor:pointer;font-weight:600;padding:6px 0}
+.full td,.full th{padding:7px 10px;font-size:13.5px;white-space:nowrap}
+.full thead th{text-align:center}
+.full thead tr:first-child th{border-bottom:0}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;counter-reset:s}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.step .n{font-family:var(--font-display);font-weight:700;color:var(--ai);font-size:14px}
+.step p{color:var(--muted);font-size:14.5px}
+ul.assume{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:14.5px}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+
+@media (max-width:860px){
+  .duel{grid-template-columns:1fr}
+  .chk{margin-left:0}
+}
+@media (max-width:520px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brow{grid-template-columns:1fr 70px}
+  .brow .bname{grid-column:1/-1}
+  th,td{padding:9px 8px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .chip.ev{animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.78}}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="kicker">Ғылыми жоба прототипі</p>
+    <h1>Ақылды қиылыс</h1>
+    <p class="lead">Жасанды интеллект көшедегі көлік санына қарап бағдаршамды басқарады және жедел қызметтердің көлігін кідіртпей өткізеді. Сол жақта бейімделгіш жүйе, оң жақта белгіленген циклмен жұмыс істейтін қалыпты бағдаршам. Екеуіне де бірдей көлік ағыны беріледі.</p>
+  </header>
+
+  <section class="card" aria-label="Басқару">
+    <div class="controls">
+      <div class="ctl"><label for="scen">Сценарий</label>
+        <select id="scen">
+          <option value="night">Түнгі уақыт, көлік аз</option>
+          <option value="normal">Күндізгі қалыпты ағын</option>
+          <option value="rush" selected>Шың сағат</option>
+          <option value="jam">Кептеліс</option>
+          <option value="skew">Бір бағыттағы жүктеме</option>
+        </select></div>
+      <div class="ctl"><label for="inten">Ағын қарқындылығы<output id="intenV">100 %</output></label>
+        <input type="range" id="inten" min="50" max="150" step="10" value="100"></div>
+      <div class="ctl"><label for="speed">Модельдеу жылдамдығы</label>
+        <select id="speed"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="8">8×</option></select></div>
+      <div class="ctl"><span class="lab">Басқару</span>
+        <div style="display:flex;gap:8px"><button id="play" class="primary" type="button">Тоқтата тұру</button><button id="reset" type="button">Басынан бастау</button></div></div>
+    </div>
+    <div class="evbar">
+      <span class="lab">Жедел көлік жіберу</span>
+      <select id="evAp" aria-label="Жедел көлік келетін бағыт">
+        <option value="-1">Кездейсоқ бағыт</option><option value="0">Солтүстіктен</option><option value="1">Шығыстан</option><option value="2">Оңтүстіктен</option><option value="3">Батыстан</option>
+      </select>
+      <button class="evb" type="button" data-ev="amb"><i class="g-amb">Ж</i>Жедел жәрдем</button>
+      <button class="evb" type="button" data-ev="fire"><i class="g-fire">Ө</i>Өрт сөндірушілер</button>
+      <button class="evb" type="button" data-ev="pol"><i class="g-pol">П</i>Полиция</button>
+      <button class="evb" type="button" data-ev="ems"><i class="g-ems">Т</i>ТЖ қызметі</button>
+      <label class="chk"><input type="checkbox" id="autoEV" checked>Жедел көліктер өздігінен пайда болсын</label>
+    </div>
+    <p class="fair">Әділ салыстыру үшін әр көлік екі қиылысқа бір мезетте және бірдей бағытпен келеді. Жедел көлікті бір рет басқанда ол екі қиылысқа бірдей жіберіледі.</p>
+  </section>
+
+  <section aria-label="Екі қиылыс">
+    <div class="duel">
+      <article class="card sys sys-ai">
+        <div class="sys-head">
+          <span class="tag"><span class="dot ai"></span>Ақылды жүйе (жасанды интеллект)</span>
+          <h2>Көлік ағынына бейімделетін бағдаршам</h2>
+          <div class="chips"><span class="chip" id="aiMode"></span><span class="chip" id="aiPhase"><span class="lamp"></span><span></span></span></div>
+        </div>
+        <canvas class="scene" id="cvAI" role="img" aria-label="Ақылды бағдаршамы бар қиылыстың модельдеуі"></canvas>
+        <div class="kpis">
+          <div class="kpi"><span>Орташа күту</span><b id="aiWait">0</b></div>
+          <div class="kpi"><span>Қазіргі кезек</span><b id="aiQ">0</b></div>
+          <div class="kpi"><span>Өткен көлік</span><b id="aiPass">0</b></div>
+          <div class="kpi"><span>Жедел көліктің күтуі</span><b id="aiEv">—</b></div>
+        </div>
+      </article>
+      <article class="card sys sys-fx">
+        <div class="sys-head">
+          <span class="tag"><span class="dot fx"></span>Қалыпты бағдаршам (тұрақты цикл)</span>
+          <h2>Белгіленген уақытпен ауысатын бағдаршам</h2>
+          <div class="chips"><span class="chip" id="fxMode"></span><span class="chip" id="fxPhase"><span class="lamp"></span><span></span></span></div>
+        </div>
+        <canvas class="scene" id="cvFX" role="img" aria-label="Қалыпты бағдаршамы бар қиылыстың модельдеуі"></canvas>
+        <div class="kpis">
+          <div class="kpi"><span>Орташа күту</span><b id="fxWait">0</b></div>
+          <div class="kpi"><span>Қазіргі кезек</span><b id="fxQ">0</b></div>
+          <div class="kpi"><span>Өткен көлік</span><b id="fxPass">0</b></div>
+          <div class="kpi"><span>Жедел көліктің күтуі</span><b id="fxEv">—</b></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-cmp">
+    <div class="sec-head">
+      <h2 id="h-cmp">Тікелей салыстыру</h2>
+      <p>Көрсеткіштер модельдеу басталғаннан бері жиналады және сағат сайын жаңарады. Қою түспен жақсы нәтиже белгіленген.</p>
+    </div>
+    <div class="verdict" id="verdict">Деректер жиналып жатыр…</div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th scope="col">Көрсеткіш</th>
+          <th scope="col" class="num"><span class="dot ai"></span>Ақылды жүйе</th>
+          <th scope="col" class="num"><span class="dot fx"></span>Қалыпты бағдаршам</th>
+          <th scope="col" class="num">Айырмашылық</th>
+        </tr></thead>
+        <tbody id="cmpBody"></tbody>
+      </table>
+    </div>
+    <p class="note">Айырмашылық ақылды жүйенің қалыпты бағдаршамнан қанша ауытқитынын көрсетеді. Жасыл түс ақылды жүйе жақсы екенін, қызыл түс нашар екенін білдіреді. Жанармай мен CO₂ бағалауы бос тұру кезіндегі шығынға (0,8 л/сағ, 1 л жанармай шамамен 2,31 кг CO₂) негізделген болжам.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-chart">
+    <div class="sec-head">
+      <h2 id="h-chart">Уақыт бойынша өзгеріс</h2>
+      <p>Соңғы 3 минуттағы екі жүйенің жағдайы.</p>
+    </div>
+    <div class="seg" role="group" aria-label="График түрі">
+      <button type="button" id="mQ" aria-pressed="true">Кезек ұзындығы</button>
+      <button type="button" id="mW" aria-pressed="false">Орташа күту уақыты</button>
+    </div>
+    <canvas id="chart" role="img" aria-label="Екі жүйенің уақыт бойынша салыстыру графигі"></canvas>
+    <div class="legend"><span><i></i>Ақылды жүйе</span><span><i class="fx"></i>Қалыпты бағдаршам</span></div>
+  </section>
+
+  <section class="card" id="bench" aria-labelledby="h-bench">
+    <div class="sec-head">
+      <h2 id="h-bench">Толық сынақ</h2>
+      <p>Бес сценарийдің әрқайсысы 10 минут бойы 5 рет модельденеді. Әр қайталауда көлік ағыны басқаша, бірақ екі жүйеге бірдей беріледі. Жедел көліктер орта есеппен 50 секунд сайын кездейсоқ бағытпен келеді.</p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px">
+      <button type="button" id="runBench" class="primary">Басқа кездейсоқ сандармен қайта есептеу</button>
+      <progress id="prog" max="1" value="0" aria-label="Сынақ барысы"></progress>
+      <span id="progT" class="note" style="margin:0">Есептелуде…</span>
+    </div>
+    <div id="benchOut" hidden>
+      <div class="cards5" id="benchCards"></div>
+      <p class="verdict" id="benchVerdict"></p>
+      <div class="seg" id="benchSeg" role="group" aria-label="Көрсеткішті таңдау"></div>
+      <div id="benchBars" style="margin-top:10px"></div>
+      <div class="legend"><span><i></i>Ақылды жүйе</span><span><i class="fx"></i>Қалыпты бағдаршам</span></div>
+      <details>
+        <summary>Барлық көрсеткіштің толық кестесі</summary>
+        <div class="scroll"><table class="full" id="fullTable"></table></div>
+      </details>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-how">
+    <div class="sec-head">
+      <h2 id="h-how">Жүйе қалай жұмыс істейді</h2>
+      <p>Бағдаршам үш қадамнан тұратын цикл бойынша әрекет етеді.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="n">1 · Қабылдау</span><h3>Көлік санын өлшейді</h3><p>Камералар мен датчиктер әр бағыттағы көлік санын, кезек ұзындығын және ең ұзақ күткен көліктің уақытын өлшейді. Жедел көліктің белгісі (шамшырақ, дыбыс, GPS немесе радио сигналы) жолаққа жеткенде танылады.</p></div>
+      <div class="step"><span class="n">2 · Шешім</span><h3>Қысымды есептейді</h3><p>Әр бағыттың «қысымы» кезектегі көлік саны мен күту уақытынан құралады. Бос бағыт жасыл жарықты ұстамайды, ал кезегі ұзын бағыт ұзағырақ жасыл алады. Ешкім шексіз күтіп қалмайтындай жоғарғы шек бар.</p></div>
+      <div class="step"><span class="n">3 · Жедел басымдық</span><h3>Жедел көлікке жол ашады</h3><p>Жедел көлік анықталғанда ағымдағы бағыт сары жарық пен барлық бағыт қызыл кезеңі арқылы қауіпсіз жабылады, жасыл жарық жедел көлік бағытына беріледі. Көлік өткен соң жүйе қалыпты бейімделу режиміне оралады.</p></div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-assume">
+    <div class="sec-head"><h2 id="h-assume">Модельдің шарттары</h2></div>
+    <ul class="assume">
+      <li>Әр бағытта бір жолақ бар, көліктер түзу жүреді, бұрылыстар мен жаяу жүргіншілер модельденбейді.</li>
+      <li>Қалыпты бағдаршам: 25 сек жасыл, 3 сек сары, 2 сек барлық бағыт қызыл, бір цикл 60 сек. Сары мен қызыл кезеңдері ақылды жүйеде де қысқартылмайды.</li>
+      <li>Ақылды жүйе жедел көлікті жолақтың басынан, яғни тоқтау сызығынан шамамен 70 м қашықтықтан көреді. Нақты жүйеде бұл қашықтық үлкен болуы тиіс.</li>
+      <li>Жедел көліктер екі жүйеде де жалпы кезекте тұрады және жолақтан асып кете алмайды. Айырмашылық тек бағдаршамның шешімінен шығады.</li>
+      <li>Прототипте жасанды интеллект датчик деректеріне негізделген бейімделгіш алгоритм ретінде көрсетілген. Келесі қадам: камерадан көлікті тану (компьютерлік көру) және күшейтілген оқыту арқылы басқару ережесін үйрету.</li>
+      <li>Нәтижелер модельден алынған, нақты көшедегі өлшем емес. Жобаны нақты қиылыстың бейнесімен және санау деректерімен тексеру керек.</li>
+    </ul>
+  </section>
+
+  <footer>Ақылды қиылыс · ғылыми жоба прототипі · көлік ағыны Пуассон үлгісімен модельденеді, екі жүйеге бірдей ағын беріледі.</footer>
+</div>
+
+<script>
+document.documentElement.lang='kk';
+/*ENGINE_START*/
+const DT=0.1,WORLD=520,C=260,HALF=32,SL=214;
+const MINGAP=5,ACC=22,DEC=26,BRK=42;
+const G_FIX=25,YEL=3,ALLRED=2;
+const TYPES={
+  car:{len:14,w:11,vmax:46},
+  amb:{len:18,w:12,vmax:66,ev:1,glyph:'Ж',col:'#f3f5f7',gcol:'#d3342b'},
+  fire:{len:26,w:13,vmax:60,ev:1,glyph:'Ө',col:'#d3342b',gcol:'#ffffff'},
+  pol:{len:15,w:11,vmax:70,ev:1,glyph:'П',col:'#2a63c9',gcol:'#ffffff'},
+  ems:{len:19,w:12,vmax:64,ev:1,glyph:'Т',col:'#e07a1f',gcol:'#ffffff'}
+};
+const PHASE_NAME=['Солтүстік–Оңтүстік','Шығыс–Батыс'];
+const SCEN={
+  night:{name:'Түнгі',rates:[3,3,3,3]},
+  normal:{name:'Қалыпты',rates:[8,8,8,8]},
+  rush:{name:'Шың сағат',rates:[14,10,14,10]},
+  jam:{name:'Кептеліс',rates:[20,20,20,20]},
+  skew:{name:'Бір бағытты жүктеме',rates:[26,4,26,4]}
+};
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+class Fixed{
+  constructor(){this.phase=0;this.state='g';this.timer=0;this.mode='fixed';}
+  update(dt){
+    this.timer+=dt;
+    if(this.state==='g'){if(this.timer>=G_FIX){this.state='y';this.timer=0;}}
+    else if(this.state==='y'){if(this.timer>=YEL){this.state='r';this.timer=0;}}
+    else if(this.timer>=ALLRED){this.phase=1-this.phase;this.state='g';this.timer=0;}
+  }
+  signal(ap){return ap%2!==this.phase?'r':(this.state==='g'?'g':this.state==='y'?'y':'r');}
+}
+class Adaptive{
+  constructor(){this.phase=0;this.state='g';this.timer=0;this.target=1;this.mode='auto';}
+  update(dt,sim){
+    this.timer+=dt;
+    const evp=sim.evPhase();
+    this.mode=evp===null?'auto':'ev';
+    if(this.state==='g'){
+      let sw=false;
+      if(evp!==null){
+        if(evp!==this.phase&&this.timer>=2)sw=true;
+      }else{
+        const cur=sim.demand(this.phase),oth=sim.demand(1-this.phase);
+        const heavy=cur.count>=6&&oth.count>=6;
+        const minG=heavy?18:7,maxG=45;
+        if(this.timer>=minG&&oth.count>0){
+          if(cur.near===0)sw=true;
+          else if(this.timer>=maxG)sw=true;
+          else if(oth.count+0.25*oth.maxWait>1.4*cur.count+2)sw=true;
+        }
+      }
+      if(sw){this.state='y';this.timer=0;this.target=1-this.phase;}
+    }else if(this.state==='y'){
+      if(this.timer>=YEL){this.state='r';this.timer=0;}
+    }else if(this.timer>=ALLRED){
+      this.phase=evp!==null?evp:this.target;this.state='g';this.timer=0;
+    }
+  }
+  signal(ap){return ap%2!==this.phase?'r':(this.state==='g'?'g':this.state==='y'?'y':'r');}
+}
+class Sim{
+  constructor(kind){
+    this.kind=kind;this.ctrl=kind==='ai'?new Adaptive():new Fixed();
+    this.t=0;this.lanes=[[],[],[],[]];this.backlog=[[],[],[],[]];
+    this.fin={n:0,wait:0,stops:0};this.crossed=0;this.cross=[];
+    this.ev={n:0,wsum:0,wmax:0,st:0};
+    this.qS=0;this.qN=0;this.qMax=0;this.nq=1;this.ns=2;this.series=[];
+  }
+  enqueue(s){
+    const e=Object.assign({arr:this.t},s);
+    if(TYPES[s.type].ev)this.backlog[s.ap].unshift(e);else this.backlog[s.ap].push(e);
+  }
+  evPhase(){
+    let best=null,bd=1e9;
+    for(let ap=0;ap<4;ap++)for(const v of this.lanes[ap])if(v.ev&&!v.passed){const d=SL-v.f;if(d<bd){bd=d;best=ap%2;}}
+    return best;
+  }
+  demand(ph){
+    let count=0,near=0,maxWait=0;
+    for(const ap of [ph,ph+2]){
+      for(const v of this.lanes[ap])if(!v.passed){count++;if(SL-v.f<120)near++;if(v.wait>maxWait)maxWait=v.wait;}
+      const bl=this.backlog[ap];
+      if(bl.length){count+=bl.length;near++;const w=this.t-bl[0].arr;if(w>maxWait)maxWait=w;}
+    }
+    return {count,near,maxWait};
+  }
+  queueNow(){
+    let q=0;
+    for(let ap=0;ap<4;ap++){for(const v of this.lanes[ap])if(!v.passed&&v.v<3)q++;q+=this.backlog[ap].length;}
+    return q;
+  }
+  step(){
+    const dt=DT;this.t+=dt;
+    this.ctrl.update(dt,this);
+    for(let ap=0;ap<4;ap++){
+      const lane=this.lanes[ap],bl=this.backlog[ap];
+      if(bl.length){
+        const last=lane[lane.length-1];
+        if(!last||last.f-last.len>=MINGAP+1){
+          const s=bl.shift(),T=TYPES[s.type];
+          lane.push({ap,type:s.type,ev:!!T.ev,len:s.len,vmax:s.vmax,col:s.col,f:0,
+            v:last?Math.min(s.vmax,Math.max(10,last.v)):Math.min(s.vmax,30),
+            wait:this.t-s.arr,stops:0,moving:true,passed:false,run:false,arr:s.arr});
+        }
+      }
+      const sig=this.ctrl.signal(ap);
+      for(let i=0;i<lane.length;i++){
+        const v=lane[i],ld=i?lane[i-1]:null;
+        let avail=ld?ld.f-ld.len-v.f-MINGAP:1e9;
+        if(!v.passed){
+          const d=SL-v.f;
+          if(sig==='r'){if(!v.run)avail=Math.min(avail,d);}
+          else if(sig==='y'&&!v.run){
+            const sd=v.v*v.v/(2*DEC);
+            if(d>sd+1)avail=Math.min(avail,d);else v.run=true;
+          }
+        }
+        const vdes=Math.min(v.vmax,Math.sqrt(2*DEC*Math.max(avail,0)));
+        if(v.v<vdes)v.v=Math.min(vdes,v.v+ACC*dt);else v.v=Math.max(vdes,v.v-BRK*dt);
+        let adv=v.v*dt;
+        if(adv>avail){adv=Math.max(avail,0);v.v=adv/dt;}
+        v.f+=adv;
+        if(v.v<3)v.wait+=dt;
+        if(v.moving&&v.v<1){v.stops++;v.moving=false;}else if(!v.moving&&v.v>8)v.moving=true;
+        if(!v.passed&&v.f>SL+0.05){
+          v.passed=true;this.crossed++;this.cross.push(this.t);
+          if(v.ev){this.ev.n++;this.ev.wsum+=v.wait;if(v.wait>this.ev.wmax)this.ev.wmax=v.wait;if(v.stops>0)this.ev.st++;}
+        }
+      }
+      while(lane.length&&lane[0].f>WORLD+40){const v=lane.shift();this.fin.n++;this.fin.wait+=v.wait;this.fin.stops+=v.stops;}
+    }
+    while(this.cross.length&&this.cross[0]<this.t-60)this.cross.shift();
+    if(this.t>=this.nq){this.nq+=1;const q=this.queueNow();this.qS+=q;this.qN++;if(q>this.qMax)this.qMax=q;}
+    if(this.t>=this.ns){this.ns+=2;const m=this.metrics();this.series.push({t:this.t,q:m.q,w:m.avgWait});if(this.series.length>1200)this.series.shift();}
+  }
+  metrics(){
+    let n=this.fin.n,w=this.fin.wait,st=this.fin.stops,q=0,evN=this.ev.n,evW=this.ev.wsum,evM=this.ev.wmax,evS=this.ev.st;
+    for(let ap=0;ap<4;ap++){
+      for(const v of this.lanes[ap]){
+        n++;w+=v.wait;st+=v.stops;
+        if(!v.passed&&v.v<3)q++;
+        if(v.ev&&!v.passed){evN++;evW+=v.wait;if(v.wait>evM)evM=v.wait;if(v.stops>0)evS++;}
+      }
+      for(const s of this.backlog[ap]){
+        n++;const bw=this.t-s.arr;w+=bw;q++;
+        if(TYPES[s.type].ev){evN++;evW+=bw;if(bw>evM)evM=bw;if(bw>2)evS++;}
+      }
+    }
+    const fuel=w*0.222;
+    return {n,avgWait:n?w/n:0,avgStops:n?st/n:0,q,avgQ:this.qN?this.qS/this.qN:0,maxQ:Math.max(this.qMax,q),
+      thr:this.t>5?this.cross.length*60/Math.min(60,this.t):0,crossed:this.crossed,
+      evN,evAvg:evN?evW/evN:0,evMax:evM,evStopped:evN?evS/evN*100:0,fuel,co2:fuel*2.31};
+  }
+}
+class World{
+  constructor(o){
+    this.rng=mulberry32(o.seed||1);this.t=0;this.scen=o.scen;this.mult=o.mult||1;
+    this.evMean=o.autoEV===false?Infinity:(o.evMean||50);
+    this.ai=new Sim('ai');this.fx=new Sim('fx');
+    this.next=[0,1,2,3].map(ap=>this.expo(ap));
+    this.nextEV=this.evMean===Infinity?Infinity:this.evMean*(0.5+this.rng());
+  }
+  expo(ap){const r=SCEN[this.scen].rates[ap]*this.mult/60;return r>0?this.t-Math.log(1-this.rng())/r:Infinity;}
+  resched(){for(let ap=0;ap<4;ap++)this.next[ap]=this.expo(ap);}
+  carSpec(ap){return {ap,type:'car',len:13+Math.floor(this.rng()*4),vmax:42+this.rng()*8,col:Math.floor(this.rng()*8)};}
+  spawnEV(type,ap){
+    if(ap<0)ap=Math.floor(this.rng()*4);
+    const T=TYPES[type],sp={ap,type,len:T.len,vmax:T.vmax,col:0};
+    this.ai.enqueue(sp);this.fx.enqueue(sp);
+  }
+  step(){
+    this.t+=DT;
+    for(let ap=0;ap<4;ap++){
+      while(this.t>=this.next[ap]){
+        const sp=this.carSpec(ap);this.ai.enqueue(sp);this.fx.enqueue(sp);
+        this.next[ap]+=this.expo(ap)-this.t;
+      }
+    }
+    if(this.t>=this.nextEV){
+      const ty=['amb','fire','pol','ems'];
+      this.spawnEV(ty[Math.floor(this.rng()*4)],-1);
+      this.nextEV=this.t+this.evMean*(0.5+this.rng());
+    }
+    this.ai.step();this.fx.step();
+  }
+}
+/*ENGINE_END*/
+
+/* ---------- Көрсеткіштер ---------- */
+const METRICS=[
+  {k:'avgWait',l:'Орташа күту уақыты',u:'сек / көлік',d:1,b:-1,g:'Көлік ағыны'},
+  {k:'avgStops',l:'Орташа тоқтау саны',u:'рет / көлік',d:2,b:-1},
+  {k:'q',l:'Қазіргі кезек',u:'көлік',d:0,b:-1},
+  {k:'avgQ',l:'Орташа кезек',u:'көлік',d:1,b:-1},
+  {k:'maxQ',l:'Ең ұзын кезек',u:'көлік',d:0,b:-1},
+  {k:'thr',l:'Өткізу қабілеті',u:'көлік / мин',d:1,b:1},
+  {k:'crossed',l:'Қиылыстан өткен көлік',u:'көлік',d:0,b:1},
+  {k:'evAvg',l:'Жедел көліктің орташа кідірісі',u:'сек',d:1,b:-1,ev:1,g:'Жедел қызметтер'},
+  {k:'evMax',l:'Жедел көліктің ең ұзақ кідірісі',u:'сек',d:1,b:-1,ev:1},
+  {k:'evStopped',l:'Тоқтауға мәжбүр болған жедел көліктер',u:'%',d:0,b:-1,ev:1},
+  {k:'fuel',l:'Бос тұруға кеткен жанармай (бағалау)',u:'мл',d:0,b:-1,g:'Экология'},
+  {k:'co2',l:'Бос тұрудан шыққан CO₂ (бағалау)',u:'г',d:0,b:-1}
+];
+const $=id=>document.getElementById(id);
+const fmt=(x,d=1)=>Number.isFinite(x)?x.toFixed(d).replace('.',','):'—';
+const pct=(a,f)=>f===0?null:(a-f)/Math.abs(f)*100;
+const sgn=p=>(p>0.5?'+':p<-0.5?'−':'')+Math.abs(p).toFixed(0)+' %';
+function delta(m,a,f,evOK){
+  if(m.ev&&!evOK)return {t:'—',c:'tie',w:0};
+  const diff=a-f,base=Math.abs(f);
+  if(Math.abs(diff)<1e-9||Math.abs(diff)<0.005*base)return {t:'тең',c:'tie',w:0};
+  const w=(m.b===-1?diff<0:diff>0)?1:-1;
+  const t=base<1e-9?(diff>0?'+':'−')+fmt(Math.abs(diff),m.d):sgn(diff/base*100);
+  return {t,c:w>0?'good':'bad',w};
+}
+
+/* ---------- Сызу ---------- */
+const PAL=['#dfe3e8','#8ea3b6','#cdaa6d','#7f9470','#ad6262','#6073a3','#4a525b','#e6e2d6'];
+const DIRS=[[0,1],[-1,0],[0,-1],[1,0]];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function pos(ap,f){switch(ap){case 0:return[C-16,f];case 1:return[WORLD-f,C-16];case 2:return[C+16,WORLD-f];default:return[f,C+16];}}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+let col={};
+function readColors(){
+  const cs=getComputedStyle(document.documentElement),g=n=>cs.getPropertyValue(n).trim();
+  col={ground:g('--ground'),road:g('--road'),block:g('--block'),mark:g('--mark'),ai:g('--ai'),fx:g('--fx'),ink:g('--ink'),muted:g('--muted'),line:g('--line'),surface:g('--surface')};
+}
+const SIGC={g:'#2fbf71',y:'#f0b429',r:'#ef4b3f'};
+function head(ctx,x,y,horiz,state){
+  const w=horiz?32:12,h=horiz?12:32;
+  ctx.fillStyle='#10161a';rr(ctx,x-w/2,y-h/2,w,h,4);ctx.fill();
+  [['r',-10],['y',0],['g',10]].forEach(([k,o])=>{
+    const on=state===k;
+    ctx.beginPath();ctx.arc(horiz?x+o:x,horiz?y:y+o,3.8,0,7);
+    ctx.fillStyle=on?SIGC[k]:'#2b3337';
+    if(on){ctx.shadowColor=SIGC[k];ctx.shadowBlur=8;}
+    ctx.fill();ctx.shadowBlur=0;
+  });
+}
+function drawVeh(ctx,v,t){
+  const T=TYPES[v.type],[fx,fy]=pos(v.ap,v.f),[dx,dy]=DIRS[v.ap];
+  const cx=fx-dx*v.len/2,cy=fy-dy*v.len/2,L=v.len,W=T.w;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(Math.atan2(dy,dx));
+  if(v.ev){const ph=reduce?0:Math.floor(t*2)%2;ctx.shadowColor=ph?'#2f6bff':'#ff3b30';ctx.shadowBlur=10;}
+  ctx.fillStyle=v.ev?T.col:PAL[v.col%PAL.length];
+  rr(ctx,-L/2,-W/2,L,W,3);ctx.fill();ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(12,18,22,.55)';
+  ctx.fillRect(L/2-5,-W/2+1.5,3.2,W-3);ctx.fillRect(-L/2+1.6,-W/2+2,2,W-4);
+  if(v.v<3){ctx.fillStyle='#ff4a3d';ctx.fillRect(-L/2,-W/2+1,1.6,2.4);ctx.fillRect(-L/2,W/2-3.4,1.6,2.4);}
+  ctx.restore();
+  if(v.ev){ctx.fillStyle=T.gcol;ctx.font='700 9px Rubik,system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(T.glyph,cx,cy+.5);}
+}
+function drawSim(cv,sim,isAI){
+  const dpr=Math.min(2,window.devicePixelRatio||1),S=Math.round(WORLD*dpr);
+  if(cv.width!==S){cv.width=S;cv.height=S;}
+  const ctx=cv.getContext('2d');ctx.setTransform(S/WORLD,0,0,S/WORLD,0,0);
+  ctx.fillStyle=col.ground;ctx.fillRect(0,0,WORLD,WORLD);
+  ctx.fillStyle=col.block;
+  [[14,14],[312,14],[14,312],[312,312]].forEach(([x,y])=>{rr(ctx,x,y,194,194,10);ctx.fill();});
+  ctx.fillStyle=col.road;ctx.fillRect(C-HALF,0,2*HALF,WORLD);ctx.fillRect(0,C-HALF,WORLD,2*HALF);
+  const c=sim.ctrl,evMode=isAI&&c.mode==='ev';
+  if(isAI){
+    const rects=[[C-HALF,0,HALF,SL],[WORLD-SL,C-HALF,SL,HALF],[C,WORLD-SL,HALF,SL],[0,C,SL,HALF]];
+    for(let ap=0;ap<4;ap++){
+      const hasEV=sim.lanes[ap].some(v=>v.ev&&!v.passed);
+      ctx.globalAlpha=evMode&&hasEV?.3:.09;ctx.fillStyle=col.ai;ctx.fillRect(...rects[ap]);
+    }
+    ctx.globalAlpha=1;
+  }
+  ctx.strokeStyle=col.mark;ctx.lineWidth=1.4;ctx.setLineDash([10,8]);ctx.globalAlpha=.7;
+  [[C,0,C,SL],[C,WORLD-SL,C,WORLD],[0,C,SL,C],[WORLD-SL,C,WORLD,C]].forEach(([a,b,x,y])=>{ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(x,y);ctx.stroke();});
+  ctx.setLineDash([]);ctx.globalAlpha=.8;ctx.fillStyle=col.mark;
+  for(let k=0;k<9;k++){
+    const o=C-HALF+3+k*7;
+    ctx.fillRect(o,218,3.5,10);ctx.fillRect(o,292,3.5,10);
+    ctx.fillRect(218,o,10,3.5);ctx.fillRect(292,o,10,3.5);
+  }
+  ctx.globalAlpha=1;
+  for(let ap=0;ap<4;ap++){
+    const sg=c.signal(ap);ctx.fillStyle=SIGC[sg];
+    const R=[[C-HALF,SL,HALF,2.5],[WORLD-SL-2.5,C-HALF,2.5,HALF],[C,WORLD-SL-2.5,HALF,2.5],[SL,C,2.5,HALF]][ap];
+    ctx.fillRect(R[0],R[1],R[2],R[3]);
+  }
+  const H=[[C-HALF-10,SL-16,false],[WORLD-(SL-16),C-HALF-10,true],[C+HALF+10,WORLD-(SL-16),false],[SL-16,C+HALF+10,true]];
+  for(let ap=0;ap<4;ap++)head(ctx,H[ap][0],H[ap][1],H[ap][2],c.signal(ap));
+  for(let ap=0;ap<4;ap++)for(const v of sim.lanes[ap])drawVeh(ctx,v,sim.t);
+  if(evMode&&!reduce){
+    for(let ap=0;ap<4;ap++)for(const v of sim.lanes[ap])if(v.ev&&!v.passed){
+      const [fx,fy]=pos(ap,v.f),[dx,dy]=DIRS[ap];
+      ctx.strokeStyle=col.ai;ctx.lineWidth=2;ctx.globalAlpha=.8;
+      ctx.beginPath();ctx.arc(fx-dx*v.len/2,fy-dy*v.len/2,17+3*Math.sin(sim.t*6),0,7);ctx.stroke();ctx.globalAlpha=1;
+    }
+  }
+  const B=[[C-16,22],[WORLD-24,C-16],[C+16,WORLD-22],[24,C+16]];
+  for(let ap=0;ap<4;ap++){
+    let n=sim.backlog[ap].length;for(const v of sim.lanes[ap])if(!v.passed&&v.v<3)n++;
+    if(!n)continue;
+    ctx.fillStyle='rgba(8,14,12,.82)';rr(ctx,B[ap][0]-13,B[ap][1]-8,26,16,8);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='600 10.5px Inter,system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(String(n),B[ap][0],B[ap][1]+.5);
+  }
+}
+
+/* ---------- Күй ---------- */
+let world,running=true,speed=2,chartMode='q';
+const cells={};
+function makeWorld(seed){
+  world=new World({scen:$('scen').value,mult:$('inten').value/100,seed,autoEV:$('autoEV').checked,evMean:40});
+  for(let i=0;i<600;i++)world.step();
+  if(world.evMean!==Infinity)world.nextEV=Math.min(world.nextEV,world.t+9);
+}
+function buildTable(){
+  const tb=$('cmpBody');let g='';
+  METRICS.forEach(m=>{
+    if(m.g&&m.g!==g){g=m.g;const r=document.createElement('tr');r.className='grp';r.innerHTML='<th colspan="4" scope="colgroup">'+g+'</th>';tb.appendChild(r);}
+    const r=document.createElement('tr');
+    r.innerHTML='<th scope="row">'+m.l+'<small>'+m.u+'</small></th><td class="num"></td><td class="num"></td><td class="num"><span class="dl tie">—</span></td>';
+    tb.appendChild(r);cells[m.k]=[...r.children].slice(1);
+  });
+}
+function phaseText(c){
+  const nm=PHASE_NAME[c.phase],s=Math.floor(c.timer);
+  if(c.state==='g')return {c:'g',t:'Жасыл: '+nm+' · '+s+' с'};
+  if(c.state==='y')return {c:'y',t:'Сары: '+nm+' · '+s+' с'};
+  return {c:'r',t:'Барлық бағыт қызыл'};
+}
+function setChip(id,c){
+  const p=phaseText(c),el=$(id);
+  el.firstElementChild.className='lamp '+p.c;el.lastElementChild.textContent=p.t;
+}
+function updateUI(){
+  const A=world.ai.metrics(),F=world.fx.metrics();
+  $('aiWait').innerHTML=fmt(A.avgWait)+' <small>сек</small>';$('fxWait').innerHTML=fmt(F.avgWait)+' <small>сек</small>';
+  $('aiQ').textContent=A.q;$('fxQ').textContent=F.q;
+  $('aiPass').textContent=A.crossed;$('fxPass').textContent=F.crossed;
+  $('aiEv').innerHTML=A.evN?fmt(A.evAvg)+' <small>сек</small>':'—';
+  $('fxEv').innerHTML=F.evN?fmt(F.evAvg)+' <small>сек</small>':'—';
+  const am=$('aiMode');
+  if(world.ai.ctrl.mode==='ev'){am.className='chip ev';am.textContent='Жедел көлік басымдығы';}
+  else{am.className='chip';am.textContent='Көлік ағынына бейімделу';}
+  $('fxMode').textContent='Тұрақты цикл: '+(2*(G_FIX+YEL+ALLRED))+' сек';
+  setChip('aiPhase',world.ai.ctrl);setChip('fxPhase',world.fx.ctrl);
+  const evOK=A.evN>0&&F.evN>0;
+  METRICS.forEach(m=>{
+    const c=cells[m.k],a=A[m.k],f=F[m.k],d=delta(m,a,f,evOK);
+    const noEv=m.ev&&!evOK;
+    c[0].textContent=noEv?'—':fmt(a,m.d);c[1].textContent=noEv?'—':fmt(f,m.d);
+    c[0].className='num'+(d.w>0?' best':'');c[1].className='num'+(d.w<0?' bestfx':'');
+    c[2].firstElementChild.textContent=d.t;c[2].firstElementChild.className='dl '+d.c;
+  });
+  if(world.t<20||A.n<5){$('verdict').textContent='Деректер жиналып жатыр…';return;}
+  const w=pct(A.avgWait,F.avgWait),t=pct(A.thr,F.thr),e=evOK?pct(A.evAvg,F.evAvg):null;
+  const word=(p,lo,hi)=>p===null||Math.abs(p)<1?'шамамен бірдей':Math.abs(p).toFixed(0)+' % '+(p<0?lo:hi);
+  let s='Қалыпты бағдаршамға қарағанда ақылды жүйеде күту уақыты '+word(w,'төмен','жоғары');
+  if(e!==null)s+=', жедел көліктің кідірісі '+word(e,'төмен','жоғары');
+  s+=', өткізу қабілеті '+word(t,'төмен','жоғары')+'.';
+  $('verdict').textContent=s;
+}
+
+/* ---------- График ---------- */
+function drawChart(){
+  const cv=$('chart'),r=cv.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+  const W=Math.max(280,Math.round(r.width)),H=Math.round(r.height);
+  if(cv.width!==W*dpr||cv.height!==H*dpr){cv.width=W*dpr;cv.height=H*dpr;}
+  const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);
+  const key=chartMode==='q'?'q':'w',span=180,t1=world.t,t0=t1-span;
+  const A=world.ai.series.filter(s=>s.t>=t0),F=world.fx.series.filter(s=>s.t>=t0);
+  let ym=1;A.concat(F).forEach(s=>{if(s[key]>ym)ym=s[key];});
+  const step=ym<=5?1:ym<=12?2:ym<=30?5:ym<=80?10:ym<=200?25:50,top=Math.ceil(ym*1.08/step)*step;
+  const L=44,R=14,T=14,B=28,pw=W-L-R,ph=H-T-B;
+  const X=t=>L+(t-t0)/span*pw,Y=v=>T+ph-v/top*ph;
+  x.font='12px Inter,system-ui,sans-serif';x.textBaseline='middle';x.textAlign='right';
+  x.strokeStyle=col.line;x.lineWidth=1;x.fillStyle=col.muted;
+  for(let v=0;v<=top+1e-6;v+=step){x.beginPath();x.moveTo(L,Y(v));x.lineTo(W-R,Y(v));x.stroke();x.fillText(String(v),L-8,Y(v));}
+  x.textAlign='center';x.textBaseline='top';
+  [[0,'−3 мин'],[60,'−2 мин'],[120,'−1 мин'],[180,'қазір']].forEach(([o,l])=>{x.fillText(l,L+o/span*pw,H-B+8);});
+  x.textAlign='left';x.textBaseline='bottom';x.fillText(chartMode==='q'?'көлік':'сек',L+4,T+12);
+  function line(d,color,dash,w){
+    if(d.length<2)return;
+    x.strokeStyle=color;x.lineWidth=w;x.setLineDash(dash);x.lineJoin='round';x.beginPath();
+    d.forEach((s,i)=>{i?x.lineTo(X(s.t),Y(s[key])):x.moveTo(X(s.t),Y(s[key]));});x.stroke();x.setLineDash([]);
+    const e=d[d.length-1];x.fillStyle=color;x.beginPath();x.arc(X(e.t),Y(e[key]),3.5,0,7);x.fill();
+  }
+  line(F,col.fx,[6,4],2);line(A,col.ai,[],2.6);
+}
+
+/* ---------- Толық сынақ ---------- */
+const BSC=['night','normal','rush','jam','skew'];
+const BKEYS=['avgWait','avgStops','maxQ','thr','evAvg','co2'];
+let bench=null,benchKey='avgWait',benchBusy=false;
+function metricOf(k){return METRICS.find(m=>m.k===k);}
+function runBenchmark(base){
+  if(benchBusy)return;benchBusy=true;
+  const seeds=[0,1,2,3,4].map(i=>base+i*7919),jobs=[];
+  BSC.forEach(s=>seeds.forEach(sd=>jobs.push([s,sd])));
+  const acc={};BSC.forEach(s=>acc[s]={ai:{},fx:{},n:0});
+  let j=0;$('runBench').disabled=true;
+  (function tick(){
+    const t0=performance.now();
+    while(j<jobs.length&&performance.now()-t0<30){
+      const [s,sd]=jobs[j],w=new World({scen:s,mult:1,seed:sd,autoEV:true,evMean:50});
+      for(let i=0;i<6000;i++)w.step();
+      ['ai','fx'].forEach(k=>{
+        const m=w[k].metrics();m.thr=m.crossed/(w.t/60);
+        METRICS.forEach(mt=>{acc[s][k][mt.k]=(acc[s][k][mt.k]||0)+m[mt.k];});
+      });
+      acc[s].n++;j++;
+    }
+    $('prog').value=j/jobs.length;$('progT').textContent=j<jobs.length?'Есептелуде: '+j+' / '+jobs.length:'Дайын';
+    if(j<jobs.length){setTimeout(tick,0);return;}
+    bench={sc:{},all:{ai:{},fx:{}}};
+    BSC.forEach(s=>{
+      bench.sc[s]={ai:{},fx:{}};
+      ['ai','fx'].forEach(k=>METRICS.forEach(m=>{
+        const v=acc[s][k][m.k]/acc[s].n;bench.sc[s][k][m.k]=v;
+        bench.all[k][m.k]=(bench.all[k][m.k]||0)+v/BSC.length;
+      }));
+    });
+    benchBusy=false;$('runBench').disabled=false;renderBench();
+  })();
+}
+function renderBench(){
+  $('benchOut').hidden=false;
+  const CARDS=['avgWait','maxQ','thr','evAvg','co2'];
+  $('benchCards').innerHTML=CARDS.map(k=>{
+    const m=metricOf(k),a=bench.all.ai[k],f=bench.all.fx[k],d=delta(m,a,f,true);
+    return '<div class="sc"><span>'+m.l+'</span><b class="'+d.c+'">'+d.t+'</b><small>'+fmt(a,m.d)+' / '+fmt(f,m.d)+' '+m.u+'</small></div>';
+  }).join('');
+  let best=null,worst=null;
+  BSC.forEach(s=>{
+    const p=pct(bench.sc[s].ai.avgWait,bench.sc[s].fx.avgWait);if(p===null)return;
+    if(!best||p<best.p)best={s,p};if(!worst||p>worst.p)worst={s,p};
+  });
+  const nm=s=>'«'+SCEN[s].name+'»';
+  let v='Бес сценарийдің орташасы бойынша ақылды жүйе күту уақытын '+sgn(pct(bench.all.ai.avgWait,bench.all.fx.avgWait))+' өзгертті (минус азаяды деген сөз). ';
+  if(best&&worst)v+='Ең үлкен айырмашылық '+nm(best.s)+' сценарийінде ('+sgn(best.p)+'), ең аз айырмашылық '+nm(worst.s)+' сценарийінде ('+sgn(worst.p)+'). Екі бағыт та толық жүктелгенде бағдаршамның икемділігі аз көмектеседі, себебі көлік жолақтың өткізу шегіне жақындайды.';
+  $('benchVerdict').textContent=v;
+  $('benchSeg').innerHTML=BKEYS.map(k=>'<button type="button" data-k="'+k+'" aria-pressed="'+(k===benchKey)+'">'+metricOf(k).l+'</button>').join('');
+  renderBars();renderFull();
+}
+function renderBars(){
+  const m=metricOf(benchKey);
+  let mx=0;BSC.forEach(s=>{mx=Math.max(mx,bench.sc[s].ai[m.k],bench.sc[s].fx[m.k]);});if(mx<=0)mx=1;
+  $('benchBars').innerHTML=BSC.map(s=>{
+    const a=bench.sc[s].ai[m.k],f=bench.sc[s].fx[m.k],d=delta(m,a,f,true);
+    return '<div class="brow"><div class="bname">'+SCEN[s].name+'<br><small class="note" style="margin:0">'+m.u+'</small></div><div class="bpair">'+
+      '<div class="bar ai"><span style="width:'+(a/mx*100).toFixed(1)+'%"></span><b>'+fmt(a,m.d)+'</b></div>'+
+      '<div class="bar fx"><span style="width:'+(f/mx*100).toFixed(1)+'%"></span><b>'+fmt(f,m.d)+'</b></div></div>'+
+      '<div><span class="dl '+d.c+'">'+d.t+'</span></div></div>';
+  }).join('');
+}
+function renderFull(){
+  let h='<thead><tr><th rowspan="2" style="text-align:left">Көрсеткіш</th>'+BSC.map(s=>'<th colspan="2">'+SCEN[s].name+'</th>').join('')+'</tr><tr>'+BSC.map(()=>'<th>ЖИ</th><th>Қал.</th>').join('')+'</tr></thead><tbody>';
+  METRICS.forEach(m=>{
+    h+='<tr><th scope="row" style="text-align:left;font-weight:500">'+m.l+' <small style="color:var(--muted)">('+m.u+')</small></th>';
+    BSC.forEach(s=>{
+      const a=bench.sc[s].ai[m.k],f=bench.sc[s].fx[m.k],d=delta(m,a,f,true);
+      h+='<td class="num'+(d.w>0?' best':'')+'">'+fmt(a,m.d)+'</td><td class="num'+(d.w<0?' bestfx':'')+'">'+fmt(f,m.d)+'</td>';
+    });
+    h+='</tr>';
+  });
+  $('fullTable').innerHTML=h+'</tbody>';
+}
+
+/* ---------- Іске қосу ---------- */
+buildTable();readColors();makeWorld(20261116);
+$('scen').addEventListener('change',()=>{world.scen=$('scen').value;world.resched();});
+$('inten').addEventListener('input',()=>{$('intenV').textContent=$('inten').value+' %';world.mult=$('inten').value/100;world.resched();});
+$('speed').addEventListener('change',()=>{speed=+$('speed').value;});
+$('autoEV').addEventListener('change',()=>{world.evMean=$('autoEV').checked?40:Infinity;world.nextEV=$('autoEV').checked?world.t+20:Infinity;});
+$('play').addEventListener('click',()=>{running=!running;$('play').textContent=running?'Тоқтата тұру':'Жалғастыру';});
+$('reset').addEventListener('click',()=>makeWorld(Math.floor(Math.random()*1e9)));
+document.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>world.spawnEV(b.dataset.ev,+$('evAp').value)));
+$('mQ').addEventListener('click',()=>{chartMode='q';$('mQ').setAttribute('aria-pressed','true');$('mW').setAttribute('aria-pressed','false');drawChart();});
+$('mW').addEventListener('click',()=>{chartMode='w';$('mW').setAttribute('aria-pressed','true');$('mQ').setAttribute('aria-pressed','false');drawChart();});
+$('benchSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;benchKey=b.dataset.k;$('benchSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderBars();});
+$('runBench').addEventListener('click',()=>runBenchmark(Math.floor(Math.random()*1e6)+1));
+addEventListener('resize',drawChart);
+
+let last=performance.now(),acc=0,lastUI=0,lastCol=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-last)/1000);last=now;
+  if(running){
+    acc+=dt*speed;let n=0;
+    while(acc>=DT&&n<80){world.step();acc-=DT;n++;}
+    if(acc>=DT)acc=0;
+  }
+  if(now-lastCol>500){readColors();lastCol=now;}
+  drawSim($('cvAI'),world.ai,true);drawSim($('cvFX'),world.fx,false);
+  if(now-lastUI>250){updateUI();drawChart();lastUI=now;}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+setTimeout(()=>runBenchmark(100),700);
+</script>
+
+</body></html>
