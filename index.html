@@ -39,6 +39,7 @@ th.a{color:var(--ai)}th.f{color:var(--fx)}
 .hud{position:fixed;padding:4px 10px;border-radius:999px;font-weight:600;font-size:13px;color:#fff;pointer-events:none}
 #hA{background:var(--ai)}#hF{background:var(--fx)}
 #tg{display:none}
+.panel.hide{display:none}
 @media (max-width:760px){
   .bar{padding:6px 8px}.ttl small{display:none}
   .panel{max-height:42%;left:10px;width:auto}
@@ -60,6 +61,7 @@ th.a{color:var(--ai)}th.f{color:var(--fx)}
     <label>Камера <select id="cam"><option value="all">Жалпы көрініс</option><option value="0">1-қиылыс</option><option value="1">2-қиылыс</option><option value="2">3-қиылыс</option><option value="ev">Жедел көлікті бақылау</option></select></label>
     <button id="pause">Тоқтату</button>
     <button id="reset">Қайта бастау</button>
+    <button id="pp" title="Оң жақтағы панельді жасыру / көрсету">Панельді жасыру</button>
   </div>
 </header>
 <aside class="panel" id="panel">
@@ -489,6 +491,9 @@ $('reset').onclick=reset;
 $('view').onclick=e=>{const b=e.target.closest('button');if(!b)return;view=b.dataset.v;
   for(const x of $('view').children)x.classList.toggle('on',x===b);};
 $('tg').onclick=()=>$('panel').classList.toggle('min');
+function setPanel(h){$('panel').classList.toggle('hide',h);$('pp').textContent=h?'Панельді көрсету':'Панельді жасыру';try{localStorage.setItem('panelHidden',h?'1':'')}catch(e){}}
+$('pp').onclick=()=>setPanel(!$('panel').classList.contains('hide'));
+try{if(localStorage.getItem('panelHidden'))setPanel(true)}catch(e){}
 function flyTo(pos,tgt){anim={p0:cam.position.clone(),t0:ctl.target.clone(),p1:new THREE.Vector3(...pos),t1:new THREE.Vector3(...tgt),k:0};}
 $('cam').onchange=e=>{camMode=e.target.value;
   if(camMode==='all')flyTo([-150,260,360],[0,0,0]);
