@@ -264,7 +264,7 @@ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;r
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xcfe0ee);scene.fog=new THREE.Fog(0xcfe0ee,800,1700);
 const cam=new THREE.PerspectiveCamera(45,1,2,5000);
-cam.position.set(-200,380,520);
+cam.position.set(-150,260,360);
 const ctl=new THREE.OrbitControls(cam,cv);
 ctl.enableDamping=true;ctl.maxPolarAngle=1.45;ctl.minDistance=25;ctl.maxDistance=1500;ctl.target.set(0,0,0);
 scene.add(new THREE.HemisphereLight(0xffffff,0x8a9a7a,0.8));
@@ -426,7 +426,7 @@ function applySignals(sim){
 }
 
 /* ===== Көліктер (InstancedMesh, әр модельге бөлек) ===== */
-const PAL=[0xdfe3e8,0x8ea3b6,0xcdaa6d,0x7f9470,0xad6262,0x6073a3,0x4a525b,0xe6e2d6,0xf2c230,0x2e9e5b].map(c=>new THREE.Color(c));
+const PAL=[0xf4f6f8,0x3f7fd0,0xe0b24a,0x4fa35a,0xd94a4a,0x6a5bd6,0x2b3036,0xf0ece0,0xf2c230,0x2e9e5b].map(c=>new THREE.Color(c));
 const MAXV=1400,MAXE=60;
 function vehGroup(){
   const root=new THREE.Group();
@@ -443,18 +443,20 @@ const D=new THREE.Object3D(),tmpC=new THREE.Color(),RED=new THREE.Color(0xff2a2a
 function yawOf(L){return L.axis==='x'?(L.dir>0?0:Math.PI):(L.dir>0?-Math.PI/2:Math.PI/2);}
 function syncVeh(sim,G){
   let n=0,c=0,e=0;const blink=(performance.now()/160|0)%2;
+  /* алыстан көріну үшін: камера алыстаған сайын көліктер үлкейеді */
+  const K=Math.min(4,Math.max(1,cam.position.distanceTo(ctl.target)/150)),KL=Math.min(K,1.9),KW=Math.min(K,2.4);
   for(let li=0;li<LANES.length;li++){
     const L=LANES[li],yaw=yawOf(L),hx=L.axis==='x'?L.dir:0,hz=L.axis==='z'?L.dir:0;
     for(const v of sim.lanes[li]){
       if(n>=MAXV)break;
       const T=TYPES[v.type],[x,z]=wpos(L,v.s-v.len/2);
-      D.position.set(x,.3,z);D.rotation.set(0,yaw,0);D.scale.set(v.len,T.h,T.w);D.updateMatrix();
+      D.position.set(x,.3,z);D.rotation.set(0,yaw,0);D.scale.set(v.len*KL,T.h*K,T.w*KW);D.updateMatrix();
       G.body.setMatrixAt(n,D.matrix);G.body.setColorAt(n,T.ev?tmpC.setHex(T.col):PAL[v.col]);n++;
-      let top=.3+T.h;
-      if(T.cab){D.position.set(x-hx*v.len*.08,top,z-hz*v.len*.08);D.scale.set(v.len*.5,.55,T.w*.86);D.updateMatrix();G.cab.setMatrixAt(c++,D.matrix);top+=.55;}
+      let top=.3+T.h*K;
+      if(T.cab){D.position.set(x-hx*v.len*.08,top,z-hz*v.len*.08);D.scale.set(v.len*.5*KL,.55*K,T.w*.86*KW);D.updateMatrix();G.cab.setMatrixAt(c++,D.matrix);top+=.55*K;}
       if(T.ev&&e<MAXE){
-        D.position.set(x,top,z);D.scale.set(.9,.3,T.w*.9);D.updateMatrix();G.bar.setMatrixAt(e,D.matrix);G.bar.setColorAt(e,blink?RED:BLUE);
-        D.position.set(x,top+6,z);D.rotation.set(0,performance.now()/400,0);D.scale.set(1,1,1);D.updateMatrix();G.pin.setMatrixAt(e,D.matrix);G.pin.setColorAt(e,tmpC.setHex(T.col===0xf3f5f7?0xd3342b:T.col));e++;
+        D.position.set(x,top,z);D.scale.set(.9*K,.3*K,T.w*.9*KW);D.updateMatrix();G.bar.setMatrixAt(e,D.matrix);G.bar.setColorAt(e,blink?RED:BLUE);
+        D.position.set(x,top+6*K,z);D.rotation.set(0,performance.now()/400,0);D.scale.set(K,K,K);D.updateMatrix();G.pin.setMatrixAt(e,D.matrix);G.pin.setColorAt(e,tmpC.setHex(T.col===0xf3f5f7?0xd3342b:T.col));e++;
       }
     }
   }
@@ -476,7 +478,7 @@ $('view').onclick=e=>{const b=e.target.closest('button');if(!b)return;view=b.dat
 $('tg').onclick=()=>$('panel').classList.toggle('min');
 function flyTo(pos,tgt){anim={p0:cam.position.clone(),t0:ctl.target.clone(),p1:new THREE.Vector3(...pos),t1:new THREE.Vector3(...tgt),k:0};}
 $('cam').onchange=e=>{camMode=e.target.value;
-  if(camMode==='all')flyTo([-200,380,520],[0,0,0]);
+  if(camMode==='all')flyTo([-150,260,360],[0,0,0]);
   else if(camMode!=='ev'){const X=XS[+camMode];flyTo([X-60,95,75],[X,0,0]);}};
 ['amb','fire','pol','ems'].forEach(k=>{const T=TYPES[k],b=document.createElement('button');
   b.innerHTML=`<span class="sw" style="background:#${T.col.toString(16).padStart(6,'0')}"></span>${T.name}`;
