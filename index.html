@@ -397,6 +397,10 @@ XS.forEach((X,i)=>label(`${i+1}. ${XN[i]}`,X,22,-30,8,'rgba(29,39,48,.85)','#fff
 label('Сақтаған Бәйішев көшесі',XS[0],8,150,7);
 /* ===== Бағдаршамдар ===== */
 const SC={g:0x22dd66,y:0xffc400,r:0xff3b30,off:0x2a2f35};
+const LAMP=new THREE.SphereGeometry(.5,12,10);
+const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,"rgba(255,255,255,.9)");gr.addColorStop(.55,"rgba(255,255,255,.35)");gr.addColorStop(1,"rgba(255,255,255,0)");
+  g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
 const SIG=XS.map(X=>{
   const A=[
     {ph:0,line:[X-CRH-5,(AVH+.7)/2,1.2,AVH-.7],pole:[X-CRH-5.5,AVH+2]},
@@ -408,9 +412,14 @@ const SIG=XS.map(X=>{
     a.lm=new THREE.MeshBasicMaterial({color:SC.r});
     const l=new THREE.Mesh(unitPlane,a.lm);l.position.set(a.line[0],.25,a.line[1]);l.scale.set(a.line[2],1,a.line[3]);scene.add(l);
     const [px,pz]=a.pole;
-    box(px,pz,.35,.35,6.5,0x3a3f45);box(px,pz,.9,.9,2.8,0x1f2328,6.3);
+    box(px,pz,.35,.35,6.5,0x3a3f45);box(px,pz,1.3,1.3,3.9,0x1f2328,6.1);
     a.L={r:new THREE.MeshBasicMaterial({color:SC.off}),y:new THREE.MeshBasicMaterial({color:SC.off}),g:new THREE.MeshBasicMaterial({color:SC.off})};
-    [['r',8.5],['y',7.7],['g',6.9]].forEach(([k,y])=>{const s=new THREE.Mesh(new THREE.SphereGeometry(.42,10,8),a.L[k]);s.position.set(px,y,pz);scene.add(s);});
+    a.H={};
+    [['r',9.0],['y',8.0],['g',7.0]].forEach(([k,y])=>{
+      const s=new THREE.Mesh(LAMP,a.L[k]);s.position.set(px,y,pz);scene.add(s);
+      const h=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:SC[k],transparent:true,depthWrite:false,depthTest:false}));
+      h.position.set(px,y,pz);h.visible=false;h.renderOrder=5;scene.add(h);a.H[k]=h;
+    });
   });
   const ring=new THREE.Mesh(new THREE.TorusGeometry(16,.6,8,48).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0x3b82f6,transparent:true,opacity:.85}));
   ring.position.set(X,1.5,0);ring.visible=false;scene.add(ring);
@@ -418,9 +427,13 @@ const SIG=XS.map(X=>{
 });
 function applySignals(sim){
   const pulse=.5+.5*Math.sin(performance.now()/150);
+  /* жарқырау: камера алыстаған сайын үлкейеді, сары шам жыпылықтайды */
+  const K=Math.min(5,Math.max(1,cam.position.distanceTo(ctl.target)/120)),HS=4.5*K;
   SIG.forEach((S,ix)=>{
     const c=sim.ctrl[ix];
-    S.A.forEach(a=>{const s=c.sig(a.ph);a.lm.color.setHex(SC[s]);for(const k of 'ryg')a.L[k].color.setHex(k===s?SC[k]:SC.off);});
+    S.A.forEach(a=>{const s=c.sig(a.ph);a.lm.color.setHex(SC[s]);
+      for(const k of 'ryg'){const on=k===s;a.L[k].color.setHex(on?SC[k]:SC.off);
+        const h=a.H[k];h.visible=on;if(on){const p=k==='y'?.75+.25*pulse:1;h.scale.set(HS*p,HS*p,1);h.material.opacity=k==='y'?.6+.4*pulse:1;}}});
     S.ring.visible=c.mode==='ev';S.ring.scale.setScalar(1+pulse*.12);
   });
 }
